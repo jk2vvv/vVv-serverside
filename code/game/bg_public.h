@@ -40,7 +40,8 @@
 #define CROUCH_VIEWHEIGHT	(CROUCH_MAXS_2+STANDARD_VIEWHEIGHT_OFFSET)//12
 #define	DEAD_VIEWHEIGHT		-16
 
-#define MAX_CLIENT_SCORE_SEND 20
+// #define MAX_CLIENT_SCORE_SEND 20
+#define MAX_CLIENT_SCORE_SEND 	31		//VVV edit
 
 //
 // config strings are a general means of communicating variable length strings
@@ -265,6 +266,7 @@ typedef struct {
 
 	// for fixed msec Pmove
 	int			pmove_fixed;
+	int			pmove_float;
 	int			pmove_msec;
 
 	// callbacks to test the world
@@ -325,11 +327,11 @@ typedef enum {
 	PERS_ATTACKEE_ARMOR,			// health/armor of last person we attacked
 	PERS_KILLED,					// count of the number of times you died
 	// player awards tracking
-	PERS_IMPRESSIVE_COUNT,			// two railgun hits in a row
-	PERS_EXCELLENT_COUNT,			// two successive kills in a short amount of time
+	PERS_IMPRESSIVE_COUNT,			// two railgun hits in a row		RETURN FRAGS
+	PERS_EXCELLENT_COUNT,			// two successive kills in a short amount of time		FLAG STEALS
 	PERS_DEFEND_COUNT,				// defend awards
 	PERS_ASSIST_COUNT,				// assist awards
-	PERS_GAUNTLET_FRAG_COUNT,		// kills with the guantlet
+	PERS_GAUNTLET_FRAG_COUNT,		// kills with the guantlet		FLAG HOLD TIME
 	PERS_CAPTURES					// captures
 } persEnum_t;
 

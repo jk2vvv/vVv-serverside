@@ -17,7 +17,8 @@ equ trap_FS_FCloseFile						 -14	; G_FS_FCLOSE_FILE
 equ trap_SendConsoleCommand					 -15	; G_SEND_CONSOLE_COMMAND 
 equ trap_LocateGameData						 -16	; G_LOCATE_GAME_DATA 
 equ trap_DropClient							 -17	; G_DROP_CLIENT 
-equ trap_SendServerCommand					 -18	; G_SEND_SERVER_COMMAND 
+; equ trap_SendServerCommand					 -18	; G_SEND_SERVER_COMMAND 
+equ trap_SendServerCommandReal					 -18	; G_SEND_SERVER_COMMAND 
 equ trap_SetConfigstring					 -19	; G_SET_CONFIGSTRING 
 equ trap_GetConfigstring					 -20	; G_GET_CONFIGSTRING 
 equ trap_GetUserinfo						 -21	; G_GET_USERINFO 

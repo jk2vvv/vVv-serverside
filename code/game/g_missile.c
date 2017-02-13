@@ -14,18 +14,12 @@ G_ReflectMissile
 ================
 */
 float RandFloat(float min, float max);
-void G_ReflectMissile( gentity_t *ent, gentity_t *missile, vec3_t forward ) 
+void G_ReflectMissile( gentity_t *ent, gentity_t *missile, vec3_t forward )
 {
 	vec3_t	bounce_dir;
 	int		i;
 	float	speed;
-	gentity_t	*owner = ent;
 	int		isowner = 0;
-
-	if ( ent->r.ownerNum )
-	{
-		owner = &g_entities[ent->r.ownerNum];
-	}
 
 	if (missile->r.ownerNum == ent->s.number)
 	{ //the original owner is bouncing the missile, so don't try to bounce it back at him
@@ -35,7 +29,6 @@ void G_ReflectMissile( gentity_t *ent, gentity_t *missile, vec3_t forward )
 	//save the original speed
 	speed = VectorNormalize( missile->s.pos.trDelta );
 
-	//if ( ent && owner && owner->NPC && owner->enemy && Q_stricmp( "Tavion", owner->NPC_type ) == 0 && Q_irand( 0, 3 ) )
 	if ( &g_entities[missile->r.ownerNum] && missile->s.weapon != WP_SABER && missile->s.weapon != G2_MODEL_PART && !isowner )
 	{//bounce back at them if you can
 		VectorSubtract( g_entities[missile->r.ownerNum].r.currentOrigin, missile->r.currentOrigin, bounce_dir );
@@ -81,18 +74,13 @@ void G_ReflectMissile( gentity_t *ent, gentity_t *missile, vec3_t forward )
 	}
 }
 
-void G_DeflectMissile( gentity_t *ent, gentity_t *missile, vec3_t forward ) 
+void G_DeflectMissile( gentity_t *ent, gentity_t *missile, vec3_t forward )
 {
 	vec3_t	bounce_dir;
 	int		i;
 	float	speed;
-	int		isowner = 0;
 	vec3_t missile_dir;
 
-	if (missile->r.ownerNum == ent->s.number)
-	{ //the original owner is bouncing the missile, so don't try to bounce it back at him
-		isowner = 1;
-	}
 
 	//save the original speed
 	speed = VectorNormalize( missile->s.pos.trDelta );
@@ -142,7 +130,7 @@ void G_BounceMissile( gentity_t *ent, trace_t *trace ) {
 	VectorMA( velocity, -2*dot, trace->plane.normal, ent->s.pos.trDelta );
 
 
-	if ( ent->s.eFlags & EF_BOUNCE_SHRAPNEL ) 
+	if ( ent->s.eFlags & EF_BOUNCE_SHRAPNEL )
 	{
 		VectorScale( ent->s.pos.trDelta, 0.25f, ent->s.pos.trDelta );
 		ent->s.pos.trType = TR_GRAVITY;
@@ -155,11 +143,11 @@ void G_BounceMissile( gentity_t *ent, trace_t *trace ) {
 			return;
 		}
 	}
-	else if ( ent->s.eFlags & EF_BOUNCE_HALF ) 
+	else if ( ent->s.eFlags & EF_BOUNCE_HALF )
 	{
 		VectorScale( ent->s.pos.trDelta, 0.65, ent->s.pos.trDelta );
 		// check for stop
-		if ( trace->plane.normal[2] > 0.2 && VectorLength( ent->s.pos.trDelta ) < 40 ) 
+		if ( trace->plane.normal[2] > 0.2 && VectorLength( ent->s.pos.trDelta ) < 40 )
 		{
 			G_SetOrigin( ent, trace->endpos );
 			return;
@@ -216,8 +204,8 @@ void G_ExplodeMissile( gentity_t *ent ) {
 
 	// splash damage
 	if ( ent->splashDamage ) {
-		if( G_RadiusDamage( ent->r.currentOrigin, ent->parent, ent->splashDamage, ent->splashRadius, ent, 
-				ent->splashMethodOfDeath ) ) 
+		if( G_RadiusDamage( ent->r.currentOrigin, ent->parent, ent->splashDamage, ent->splashRadius, ent,
+				ent->splashMethodOfDeath ) )
 		{
 			if (ent->parent)
 			{
@@ -241,7 +229,7 @@ void G_RunStuckMissile( gentity_t *ent )
 		{
 			gentity_t *other = &g_entities[ent->s.groundEntityNum];
 
-			if ( (!VectorCompare( vec3_origin, other->s.pos.trDelta ) && other->s.pos.trType != TR_STATIONARY) || 
+			if ( (!VectorCompare( vec3_origin, other->s.pos.trDelta ) && other->s.pos.trType != TR_STATIONARY) ||
 				(!VectorCompare( vec3_origin, other->s.apos.trDelta ) && other->s.apos.trType != TR_STATIONARY) )
 			{//thing I stuck to is moving or rotating now, kill me
 				G_Damage( ent, other, other, NULL, NULL, 99999, 0, MOD_CRUSH );
@@ -272,14 +260,14 @@ void G_BounceProjectile( vec3_t start, vec3_t impact, vec3_t dir, vec3_t endout 
 
 
 //-----------------------------------------------------------------------------
-gentity_t *CreateMissile( vec3_t org, vec3_t dir, float vel, int life, 
+gentity_t *CreateMissile( vec3_t org, vec3_t dir, float vel, int life,
 							gentity_t *owner, qboolean altFire)
 //-----------------------------------------------------------------------------
 {
 	gentity_t	*missile;
 
 	missile = G_Spawn();
-	
+
 	missile->nextthink = level.time + life;
 	missile->think = G_FreeEntity;
 	missile->s.eType = ET_MISSILE;
@@ -324,9 +312,9 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace ) {
 		G_AddEvent( ent, EV_GRENADE_BOUNCE, 0 );
 		return;
 	}
-	
+
 	// I would glom onto the EF_BOUNCE code section above, but don't feel like risking breaking something else
-	if ( (!other->takedamage && (ent->bounceCount > 0 || ent->bounceCount == -5) && ( ent->s.eFlags&(EF_BOUNCE_SHRAPNEL) ) ) || ((trace->surfaceFlags&SURF_FORCEFIELD)&&!ent->splashDamage&&!ent->splashRadius&&(ent->bounceCount > 0 || ent->bounceCount == -5)) ) 
+	if ( (!other->takedamage && (ent->bounceCount > 0 || ent->bounceCount == -5) && ( ent->s.eFlags&(EF_BOUNCE_SHRAPNEL) ) ) || ((trace->surfaceFlags&SURF_FORCEFIELD)&&!ent->splashDamage&&!ent->splashRadius&&(ent->bounceCount > 0 || ent->bounceCount == -5)) )
 	{
 		G_BounceMissile( ent, trace );
 
@@ -341,7 +329,7 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace ) {
 	if ( !other->takedamage && ent->s.weapon == WP_THERMAL && !ent->alt_fire )
 	{//rolling thermal det - FIXME: make this an eFlag like bounce & stick!!!
 		//G_BounceRollMissile( ent, trace );
-		if ( ent->owner && ent->owner->s.number == 0 ) 
+		if ( ent->owner && ent->owner->s.number == 0 )
 		{
 			G_MissileAddAlerts( ent );
 		}
@@ -389,10 +377,6 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace ) {
 		VectorCopy(trace->plane.normal, te->s.angles);
 		te->s.eventParm = 0;
 
-		/*if (other->client->ps.velocity[2] > 0 ||
-			other->client->pers.cmd.forwardmove ||
-			other->client->pers.cmd.rightmove)
-			*/
 		if (other->client->ps.velocity[2] > 0 ||
 			other->client->pers.cmd.forwardmove < 0) //now we only do it if jumping or running backward. Should be able to full-on charge.
 		{
@@ -498,7 +482,7 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace ) {
 	}
 
 	// check for sticking
-	if ( !other->takedamage && ( ent->s.eFlags & EF_MISSILE_STICK ) ) 
+	if ( !other->takedamage && ( ent->s.eFlags & EF_MISSILE_STICK ) )
 	{
 		laserTrapStick( ent, trace->endpos, trace->plane.normal );
 		G_AddEvent( ent, EV_MISSILE_STICK, 0 );
@@ -530,14 +514,14 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace ) {
 				else
 				{
 					G_Damage (other, ent, &g_entities[ent->r.ownerNum], velocity,
-						/*ent->s.origin*/ent->r.currentOrigin, ent->damage, 
+						/*ent->s.origin*/ent->r.currentOrigin, ent->damage,
 						DAMAGE_HALF_ABSORB, ent->methodOfDeath);
 				}
 			}
 			else
 			{
 				G_Damage (other, ent, &g_entities[ent->r.ownerNum], velocity,
-					/*ent->s.origin*/ent->r.currentOrigin, ent->damage, 
+					/*ent->s.origin*/ent->r.currentOrigin, ent->damage,
 					0, ent->methodOfDeath);
 			}
 		}
@@ -566,7 +550,7 @@ killProj:
 
 	// splash damage (doesn't apply to person directly hit)
 	if ( ent->splashDamage ) {
-		if( G_RadiusDamage( trace->endpos, ent->parent, ent->splashDamage, ent->splashRadius, 
+		if( G_RadiusDamage( trace->endpos, ent->parent, ent->splashDamage, ent->splashRadius,
 			other, ent->splashMethodOfDeath ) ) {
 			if( !hitClient ) {
 				g_entities[ent->r.ownerNum].client->accuracy_hits++;
@@ -700,7 +684,8 @@ passthrough:
 	}
 
 	// check think function after bouncing
-	G_RunThink( ent );
+	if (!g_pauseGame.integer)
+		G_RunThink( ent );
 }
 
 

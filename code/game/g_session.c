@@ -20,11 +20,14 @@ G_WriteClientSessionData
 Called on game shutdown
 ================
 */
+
+#define IP_INDICATOR_CHAR	'*'
+
 void G_WriteClientSessionData( gclient_t *client ) {
 	const char	*s;
 	const char	*var;
 
-	s = va("%i %i %i %i %i %i %i %i %i %i", 
+	s = va("%i %i %i %i %i %i %i %i %i %i %i %i %i %c%s",	//using * symbol to mark start of ip string
 		client->sess.sessionTeam,
 		client->sess.spectatorTime,
 		client->sess.spectatorState,
@@ -34,7 +37,12 @@ void G_WriteClientSessionData( gclient_t *client ) {
 		client->sess.teamLeader,
 		client->sess.setForce,
 		client->sess.saberLevel,
-		client->sess.selectedFP
+		client->sess.selectedFP,
+		client->sess.ignoredclients,
+		client->sess.amflags,
+		client->sess.pmoveMsec,
+		IP_INDICATOR_CHAR,
+		client->sess.ip
 		);
 
 	var = va( "session%i", client - level.clients );
@@ -49,19 +57,21 @@ G_ReadSessionData
 Called on a reconnect
 ================
 */
+
 void G_ReadSessionData( gclient_t *client ) {
 	char	s[MAX_STRING_CHARS];
-	const char	*var;
+	const char	*var, *p;
 
 	// bk001205 - format
 	int teamLeader;
 	int spectatorState;
 	int sessionTeam;
+	const int clientNum = client - level.clients;
 
-	var = va( "session%i", client - level.clients );
+	var = va( "session%i", clientNum );
 	trap_Cvar_VariableStringBuffer( var, s, sizeof(s) );
 
-	sscanf( s, "%i %i %i %i %i %i %i %i %i %i",
+	sscanf( s, "%i %i %i %i %i %i %i %i %i %i %i %i %i",
 		&sessionTeam,                 // bk010221 - format
 		&client->sess.spectatorTime,
 		&spectatorState,              // bk010221 - format
@@ -71,8 +81,18 @@ void G_ReadSessionData( gclient_t *client ) {
 		&teamLeader,                   // bk010221 - format
 		&client->sess.setForce,
 		&client->sess.saberLevel,
-		&client->sess.selectedFP
+		&client->sess.selectedFP,
+		&client->sess.ignoredclients,		//VVV
+		&client->sess.amflags,				//VVV
+		&client->sess.pmoveMsec				//VVV
 		);
+
+
+	p = strchr(s, IP_INDICATOR_CHAR);
+	if (p && *p && *(p+1))
+		Q_strncpyz(client->sess.ip, p + 1, sizeof(client->sess.ip));
+		
+	StringToIP(client->sess.ip, client->sess.ipb);	//save his ip bytes
 
 	// bk001205 - format issues
 	client->sess.sessionTeam = (team_t)sessionTeam;
@@ -97,6 +117,10 @@ void G_InitSessionData( gclient_t *client, char *userinfo, qboolean isBot ) {
 
 	sess = &client->sess;
 
+	sess->ignoredclients = 0;
+	sess->amflags = AMFLAG_ALTFOLLOW;		//now enabled by default.
+	sess->pmoveMsec = 0;
+
 	// initial team determination
 	if ( g_gametype.integer >= GT_TEAM ) {
 		if ( g_teamAutoJoin.integer ) {
@@ -106,7 +130,7 @@ void G_InitSessionData( gclient_t *client, char *userinfo, qboolean isBot ) {
 			// always spawn as spectator in team games
 			if (!isBot)
 			{
-				sess->sessionTeam = TEAM_SPECTATOR;	
+				sess->sessionTeam = TEAM_SPECTATOR;
 			}
 			else
 			{ //Bots choose their team on creation
@@ -138,12 +162,19 @@ void G_InitSessionData( gclient_t *client, char *userinfo, qboolean isBot ) {
 			case GT_HOLOCRON:
 			case GT_JEDIMASTER:
 			case GT_SINGLE_PLAYER:
-				if ( g_maxGameClients.integer > 0 && 
+				#if 0
+				if ( g_maxGameClients.integer > 0 &&
 					level.numNonSpectatorClients >= g_maxGameClients.integer ) {
 					sess->sessionTeam = TEAM_SPECTATOR;
 				} else {
 					sess->sessionTeam = TEAM_FREE;
 				}
+				#else
+				if (isBot)	//bot specific hack..we always want bots to join the game instantly..
+					sess->sessionTeam = TEAM_FREE;	//fix team bug connect in ffa
+				else
+					sess->sessionTeam = TEAM_SPECTATOR;	//fix team bug connect in ffa
+				#endif
 				break;
 			case GT_TOURNAMENT:
 				// if the game is full, go into a waiting mode
@@ -176,7 +207,7 @@ void G_InitWorldSession( void ) {
 
 	trap_Cvar_VariableStringBuffer( "session", s, sizeof(s) );
 	gt = atoi( s );
-	
+
 	// if the gametype changed since the last session, don't use any
 	// client sessions
 	if ( g_gametype.integer != gt ) {
@@ -196,7 +227,7 @@ void G_WriteSessionData( void ) {
 
 	trap_Cvar_Set( "session", va("%i", g_gametype.integer) );
 
-	for ( i = 0 ; i < level.maxclients ; i++ ) {
+	for ( i = 0 ; i < level.maxclients ; ++i ) {
 		if ( level.clients[i].pers.connected == CON_CONNECTED ) {
 			G_WriteClientSessionData( &level.clients[i] );
 		}

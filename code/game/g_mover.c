@@ -50,10 +50,10 @@ gentity_t	*G_TestEntityPosition( gentity_t *ent ) {
 	} else {
 		trap_Trace( &tr, ent->s.pos.trBase, ent->r.mins, ent->r.maxs, ent->s.pos.trBase, ent->s.number, mask );
 	}
-	
+
 	if (tr.startsolid)
 		return &g_entities[ tr.entityNum ];
-		
+
 	return NULL;
 }
 
@@ -109,7 +109,7 @@ qboolean	G_TryPushingEntity( gentity_t *check, gentity_t *pusher, vec3_t move, v
 
 	// EF_MOVER_STOP will just stop when contacting another entity
 	// instead of pushing it, but entities can still ride on top of it
-	if ( ( pusher->s.eFlags & EF_MOVER_STOP ) && 
+	if ( ( pusher->s.eFlags & EF_MOVER_STOP ) &&
 		check->s.groundEntityNum != pusher->s.number ) {
 		return qfalse;
 	}
@@ -127,7 +127,7 @@ qboolean	G_TryPushingEntity( gentity_t *check, gentity_t *pusher, vec3_t move, v
 	}
 	pushed_p++;
 
-	// try moving the contacted entity 
+	// try moving the contacted entity
 	// figure movement due to the pusher's amove
 	G_CreateRotationMatrix( amove, transpose );
 	G_TransposeMatrix( transpose, matrix );
@@ -297,6 +297,22 @@ qboolean G_MoverPush( gentity_t *pusher, vec3_t move, vec3_t amove, gentity_t **
 			continue;
 		}
 
+		// facts: on ctf_yavin, the mid doors have speed=400.f, and the slow side doors have speed=30.f
+		if (g_moverfix.integer && pusher->speed == 400.f) {
+			if (check->s.eType == ET_BODY ||
+				(check->s.eType == ET_PLAYER && check->health < 1))
+			{ //whatever, just crush it
+				G_Damage( check, pusher, pusher, NULL, NULL, 999, 0, MOD_CRUSH );
+				continue;
+			}
+
+			if ( (check->r.contents & CONTENTS_TRIGGER) && check->s.weapon == G2_MODEL_PART)
+			{//keep limbs from blocking elevators.  Kill the limb and keep moving.
+				G_FreeEntity(check);
+				continue;
+			}
+		}
+
 		// the move was blocked an entity
 
 		// bobbing entities are instant-kill and never get blocked
@@ -305,7 +321,7 @@ qboolean G_MoverPush( gentity_t *pusher, vec3_t move, vec3_t amove, gentity_t **
 			continue;
 		}
 
-		
+
 		// save off the obstacle so we can call the block function (crush, etc)
 		*obstacle = check;
 
@@ -404,7 +420,8 @@ void G_RunMover( gentity_t *ent ) {
 	}
 
 	// check think function
-	G_RunThink( ent );
+	if (!g_pauseGame.integer)
+		G_RunThink( ent );
 }
 
 /*
@@ -453,7 +470,7 @@ void SetMoverState( gentity_t *ent, moverState_t moverState, int time ) {
 		ent->s.pos.trType = TR_LINEAR_STOP;
 		break;
 	}
-	BG_EvaluateTrajectory( &ent->s.pos, level.time, ent->r.currentOrigin );	
+	BG_EvaluateTrajectory( &ent->s.pos, level.time, ent->r.currentOrigin );
 	trap_LinkEntity( ent );
 }
 
@@ -1008,7 +1025,7 @@ void Touch_Plat( gentity_t *ent, gentity_t *other, trace_t *trace ) {
 	if ( !other->client || other->client->ps.stats[STAT_HEALTH] <= 0 ) {
 		return;
 	}
-	
+
 	if (other && other->client && ent->delay && ent->moverState == MOVER_POS2)
 	{ //This means I don't care if you're touching me, I already intend to go back down on a set interval.
 		return;
@@ -1067,7 +1084,7 @@ void SpawnPlatTrigger( gentity_t *ent ) {
 	trigger->touch = Touch_PlatCenterTrigger;
 	trigger->r.contents = CONTENTS_TRIGGER;
 	trigger->parent = ent;
-	
+
 	tmin[0] = ent->pos1[0] + ent->r.mins[0] + 33;
 	tmin[1] = ent->pos1[1] + ent->r.mins[1] + 33;
 	tmin[2] = ent->pos1[2] + ent->r.mins[2];
@@ -1084,7 +1101,7 @@ void SpawnPlatTrigger( gentity_t *ent ) {
 		tmin[1] = ent->pos1[1] + (ent->r.mins[1] + ent->r.maxs[1]) *0.5;
 		tmax[1] = tmin[1] + 1;
 	}
-	
+
 	VectorCopy (tmin, trigger->r.mins);
 	VectorCopy (tmax, trigger->r.maxs);
 
@@ -1234,7 +1251,7 @@ void SP_func_button( gentity_t *ent ) {
 	}
 
 	ent->sound1to2 = G_SoundIndex("sound/movers/switches/switch3.wav");
-	
+
 	if ( !ent->speed ) {
 		ent->speed = 40;
 	}
@@ -1777,7 +1794,7 @@ void SP_func_breakable( gentity_t *ent ) {
 	G_SpawnString( "breaksound", "sound/movers/objects/objectBreak.wav", &sound);
 
 	ent->boltpoint3 = G_SoundIndex(sound);
-	
+
 	gExplSound = G_SoundIndex("sound/weapons/explosions/cargoexplode.wav");
 
 	if (debrissound && debrissound[0])
@@ -2028,12 +2045,12 @@ void func_usable_use (gentity_t *self, gentity_t *other, gentity_t *activator)
 		self->r.svFlags &= ~SVF_PLAYER_USABLE;
 		//also remove ability to call any use func at all!
 		self->use = 0;
-		
+
 		if(self->target && self->target[0])
 		{
 			G_UseTargets(self, activator);
 		}
-		
+
 		if ( self->wait )
 		{
 			self->think = func_usable_think;
@@ -2093,7 +2110,7 @@ A bmodel that just sits there, doing nothing.  Can be used for conditional walls
 "endframe"	Will make it animate to next shader frame when used, not turn on/off... set this to number of frames in the shader, minus 1
 */
 
-void SP_func_usable( gentity_t *self ) 
+void SP_func_usable( gentity_t *self )
 {
 	trap_SetBrushModel( self, self->model );
 	InitMover( self );

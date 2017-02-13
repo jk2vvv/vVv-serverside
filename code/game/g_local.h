@@ -9,16 +9,87 @@
 //==================================================================
 
 // the "gameversion" client command will print this plus compile date
-#define	GAMEVERSION	"basejk"
+// #define	GAMEVERSION	"basejk"
+#define	GAMEVERSION	"< VvV >"
+#define PAUSEGAME_CVARNAME	"nt_PauseGame"
+
+#define MOD_VERSION	"0.15"
+
+// #define DEBUGFPS
+
+// #define DEBUGSTUFF
+
+#define HELP_CMD		"info"
+
+typedef struct gentity_s gentity_t;
+typedef struct gclient_s gclient_t;
+
+#define ARRAY_LEN(x)			(sizeof(x) / sizeof(*(x)))
+
+typedef struct {
+	vmCvar_t	*vmCvar;
+	char		*cvarName;
+	char		*defaultString;
+	int			cvarFlags;
+	int			modificationCount;  // for tracking changes
+	qboolean	trackChange;	    // track this variable, and announce if changed
+	qboolean 	teamShader;        // track and if changed, update shader state
+	const char 	*desc;			//add description of cvar - only used for newly added command in the server mod
+} cvarTable_t;
+
+#define TEAM_PLAYING	99		// team is != spectator
+
+#define ConcatArgs( x ) G_ConcatArgs( x )
+
+const char *G_TeamNameColoured(const int team);
+void StringToIP (const char *s, byte *b);
+
+// #ifdef DEBUGSTUFF
+void DebugStuff(const char *s);
+// #endif
+
+const char *G_StringFixedLength(const char* str, int numChars, char fillChar, qboolean clampMax);
+#define FixedLengthSpace( s, len ) G_StringFixedLength( s, len, ' ', qtrue )
+
+qboolean IsCapper(gentity_t *ent);
+float ScorePerMin(gclient_t *client);
+int G_FindPlayerFromStringCheap (gentity_t *ent, const char *find, qboolean trySkipSpecs );
+
+int BinaryTeam (gentity_t* ent);
+qboolean G_StringStartsWithCaseIns (const char *str, const char *check);
+qboolean G_StringContainsAnyInCharset(const char *str, const char *set);
+void QDECL G_SecurityLogPrint ( const char *event, gentity_t *ent );
+qboolean G_IsBot(int client);
+char ColorCodeForClient (gentity_t *target, qboolean botSpecialColor);
+const char *G_Argv(int arg);
+int G_GetNumPlaying (void);
+
+char *mystrcat( char *dest, int size, const char *src ) ;
+
+qboolean G_StringStartsWith (const char *str, const char *check);
+const char *G_MsToString (const int ms);
+void G_SendClientPrint (const int client, const char *fmt, ...);
+void G_SendClientCenterPrint (const int client, const char *fmt, ...);
+int G_FindPlayerFromString(const char *buf );
+const char *G_ClientNameWithPrefix (gentity_t *ent, const int maxNameChars);
+const char *G_ClientNameFixedLength(gentity_t *ent, const int numChars);
+void G_ClockString( char *buf, int bufsize );
+
+#define SHOWNAME( x ) g_entities[x].client->pers.netname
+
+extern int pauseGameStartTime;
+
+extern char	*G_ConcatArgs( int start );
 
 #define BODY_QUEUE_SIZE		8
 
 #define INFINITE			1000000
-#define Q3_INFINITE			16777216 
+#define Q3_INFINITE			16777216
 
 #define	FRAMETIME			100					// msec
 #define	CARNAGE_REWARD_TIME	3000
-#define REWARD_SPRITE_TIME	2000
+// #define REWARD_SPRITE_TIME	2000
+#define REWARD_SPRITE_TIME	1750	//reduced
 
 #define	INTERMISSION_DELAY_TIME	1000
 #define	SP_INTERMISSION_DELAY_TIME	5000
@@ -44,7 +115,7 @@ typedef enum {
 typedef enum //# material_e
 {
 	MAT_METAL = 0,
-	MAT_GLASS,		
+	MAT_GLASS,
 	MAT_ELECTRICAL,// (sparks)
 	MAT_ORGANIC,// (not implemented)
 	MAT_BORG,//borg chunks
@@ -55,7 +126,7 @@ typedef enum //# material_e
 
 #define SP_PODIUM_MODEL		"models/mapobjects/podium/podium4.md3"
 
-typedef enum 
+typedef enum
 {
 	HL_NONE = 0,
 	HL_FOOT_RT,
@@ -88,8 +159,7 @@ typedef enum
 extern void *precachedKyle;
 extern void *g2SaberInstance;
 
-typedef struct gentity_s gentity_t;
-typedef struct gclient_s gclient_t;
+void QDECL G_Printf( const char *fmt, ... );
 
 struct gentity_s {
 	entityState_t	s;				// communicated by server to clients
@@ -102,6 +172,8 @@ struct gentity_s {
 	struct gclient_s	*client;			// NULL if not a client
 
 	qboolean	inuse;
+
+	// int			ammoCountAfterDrop;		//VVV add!	now using teamnodmg instead VVV mine drop bug minebug
 
 	char		*classname;			// set in QuakeEd
 	int			spawnflags;			// set in QuakeEd
@@ -131,13 +203,13 @@ struct gentity_s {
 	char		*model;
 	char		*model2;
 	int			freetime;			// level.time when the object was freed
-	
+
 	int			eventTime;			// events will be cleared EVENT_VALID_MSEC after set
 	qboolean	freeAfterEvent;
 	qboolean	unlinkAfterEvent;
 
 	qboolean	physicsObject;		// if true, it can be pushed by movers and fall off edges
-									// all game items are physicsObjects, 
+									// all game items are physicsObjects,
 	float		physicsBounce;		// 1.0 = continuous bounce, 0.0 = no bounce
 	int			clipmask;			// brushes with this content value will be collided against
 									// when moving.  items and corpses do not collide against
@@ -244,6 +316,8 @@ struct gentity_s {
 	gitem_t		*item;			// for bonus items
 };
 
+
+
 #define DAMAGEREDIRECT_HEAD		1
 #define DAMAGEREDIRECT_RLEG		2
 #define DAMAGEREDIRECT_LLEG		3
@@ -268,65 +342,153 @@ typedef enum {
 
 typedef struct {
 	playerTeamStateState_t	state;
-
 	int			location;
 
+	#if 1	//moved these into ctfstats_t
 	int			captures;
 	int			basedefense;
 	int			carrierdefense;
 	int			flagrecovery;
 	int			fragcarrier;
 	int			assists;
+	int			flagsteal, flaghold;
+	#endif
 
-	float		lasthurtcarrier;
-	float		lastreturnedflag;
-	float		flagsince;
-	float		lastfraggedcarrier;
+	int		lasthurtcarrier;
+	int		lastreturnedflag;
+	int		flagsince;		//why was this a float!!?
+	int		lastfraggedcarrier;
 } playerTeamState_t;
+
+
 
 // the auto following clients don't follow a specific client
 // number, but instead follow the first two active players
 #define	FOLLOW_ACTIVE1	-1
 #define	FOLLOW_ACTIVE2	-2
 
+
+
+#define AMFLAG_MUTED 			1
+#define AMFLAG_MUTED_PUBONLY 	2
+#define AMFLAG_LOCKEDNAME		4
+#define AMFLAG_LOCKEDTEAM		8
+#define AMFLAG_ALTFOLLOW		16  //client can use alt-attack to follow prev client in spec
+
+
+
 // client data that stays across multiple levels or tournament restarts
 // this is achieved by writing all the data to cvar strings at game shutdown
 // time and reading them back at connection time.  Anything added here
 // MUST be dealt with in G_InitSessionData() / G_ReadSessionData() / G_WriteSessionData()
 typedef struct {
-	team_t		sessionTeam;
-	int			spectatorTime;		// for determining next-in-line to play
+	team_t				sessionTeam;
+	int					spectatorTime;		// for determining next-in-line to play
 	spectatorState_t	spectatorState;
-	int			spectatorClient;	// for chasecam and follow mode
-	int			wins, losses;		// tournament stats
-	int			selectedFP;			// check against this, if doesn't match value in playerstate then update userinfo
-	int			saberLevel;			// similar to above method, but for current saber attack level
-	qboolean	setForce;			// set to true once player is given the chance to set force powers
-	int			updateUITime;		// only update userinfo for FP/SL if < level.time
-	qboolean	teamLeader;			// true when this client is a team leader
+	int					spectatorClient;	// for chasecam and follow mode
+	int					wins, losses;		// tournament stats
+	int					selectedFP;			// check against this, if doesn't match value in playerstate then update userinfo
+	int					saberLevel;			// similar to above method, but for current saber attack level
+	qboolean			setForce;			// set to true once player is given the chance to set force powers
+	int					updateUITime;		// only update userinfo for FP/SL if < level.time
+	qboolean			teamLeader;			// true when this client is a team leader
+
+	//new mod stuff
+	char				ip[36];
+	unsigned char		ipb[4];		//bytes
+	unsigned int		ignoredclients;
+	int					amflags;
+	int					pmoveMsec;
 } clientSession_t;
 
-//
-#define MAX_NETNAME			36
+#define MAX_NETNAME			96	//increased from 36
 #define	MAX_VOTE_COUNT		3
+
+#define FLOODCONTROL_MS		1000
+
+
+#define ANALYZE_BS
+
+#ifdef ANALYZE_BS
+
+#define BUTTON_DBS			4096
+#define ANGLES_HISTORY		32	//must be power of 2
+#define ANGLES_MASK			(ANGLES_HISTORY-1)
+
+typedef struct {
+	char	frametime;	//ms since previous usercmd_t
+	char 	moves;		//bitmask of movement buttons held
+	short	buttons;	//button_attack etc, buttons held this frame
+	float	yawdelta;	//how many degrees did he turn in yaw, from previous frame till this?
+} bsFrameSample_t;
+
+#define NUM_BS_FRAME_SAMPLES		(ANGLES_HISTORY-1)	//-1 because we need one extra for making "delta" frames
+typedef struct {
+	bsFrameSample_t	frame[NUM_BS_FRAME_SAMPLES];
+} bsRecord_t;
+
+#define MOVE_FORWARD		1
+#define MOVE_BACK			2
+#define MOVE_LEFT			4
+#define MOVE_RIGHT			8
+#define MOVE_UP				16
+#define MOVE_DOWN			32
+
+void QDECL G_LogBsEvent ( bsRecord_t *bsr, gentity_t *ent );
+
+const char *BsRecordText (int i, bsFrameSample_t *frame);
+void BuildBsRecord (bsRecord_t *bsr, gclient_t *client);
+#endif
+
+typedef struct {
+	int		rets;
+	int		defense;
+	int		assist;
+	int		flaghold;
+	int		flaggrabs;
+	int		frags;
+	int		score;
+} teamStats_t;
+
 
 // client data that stays across multiple respawns, but is cleared
 // on each level change or team change at ClientBegin()
 typedef struct {
-	clientConnected_t	connected;	
-	usercmd_t	cmd;				// we would lose angles if not persistant
-	qboolean	localClient;		// true if "ip" info key is "localhost"
-	qboolean	initialSpawn;		// the first spawn should be at a cool location
-	qboolean	predictItemPickup;	// based on cg_predictItems userinfo
-	qboolean	pmoveFixed;			//
-	char		netname[MAX_NETNAME];
-	int			maxHealth;			// for handicapping
-	int			enterTime;			// level.time the client entered the game
-	playerTeamState_t teamState;	// status in teamplay games
-	int			voteCount;			// to prevent people from constantly calling votes
-	int			teamVoteCount;		// to prevent people from constantly calling votes
-	qboolean	teamInfo;			// send team overlay updates?
+	clientConnected_t	connected;
+	usercmd_t			cmd;				// we would lose angles if not persistant
+	qboolean			localClient;		// true if "ip" info key is "localhost"
+	qboolean			initialSpawn;		// the first spawn should be at a cool location
+	qboolean			predictItemPickup;	// based on cg_predictItems userinfo
+
+	char				netname[MAX_NETNAME];
+	char				netnameClean[MAX_NETNAME];
+	int					maxHealth;			// for handicapping
+	int					enterTime;			// level.time the client entered the game
+	playerTeamState_t 	teamState;	// status in teamplay games
+	int					teamInfo;			// send team overlay updates?
+
+	// connectTime must be here so it clears on map_restart, cus else the time is fucked.
+	int			connectTime;			//level.time the client connected
+	int			userinfoChangeTime;		//for flood control
+	int			userinfoRequestTime;	//for flood control
+
+	int			lastActionTime;			//last level.time this guy was pressing a button
+
+	#ifdef ANALYZE_BS
+	usercmd_t		backupcmd[ANGLES_HISTORY];	//a circular buffer containing info from latest usercmd_t's
+	int					cmdstack;
+
+	//after someone just succeeded in getting bs animation, collect few more samples so we can analyse
+	//the client's yaw angles before and after the move
+	//the d/bs sample will be in the "middle" and we get equally many samples before and after the bs move
+	#define BS_ANALYZE_SAMPLES			(ANGLES_HISTORY / 2)
+	int			analyzestart;
+
+	bsRecord_t	savedbs;
+	int			numbs;
+	#endif
 } clientPersistant_t;
+
 
 
 // this structure is cleared on each ClientSpawn(),
@@ -338,7 +500,6 @@ struct gclient_s {
 	// the rest of the structure is private to game
 	clientPersistant_t	pers;
 	clientSession_t		sess;
-
 	int			invulnerableTimer;
 
 	int			saberCycleQueue;
@@ -352,7 +513,7 @@ struct gclient_s {
 									// of the g_sycronousclients case
 	int			buttons;
 	int			oldbuttons;
-	int			latched_buttons;
+	// int			latched_buttons;
 
 	vec3_t		oldOrigin;
 
@@ -400,7 +561,7 @@ struct gclient_s {
 	char		*areabits;
 
 	void		*ghoul2;		// In parallel with the centity, there is a corresponding ghoul2 model for players.
-								// This is an instance that is maintained on the server side that is used for 
+								// This is an instance that is maintained on the server side that is used for
 								// determining saber position and per-poly collision
 
 	vec3_t		lastSaberTip;		//position of saber tip last update
@@ -429,6 +590,10 @@ typedef struct {
 	int			warmupTime;			// restart match at this time
 
 	fileHandle_t	logFile;
+	fileHandle_t	logFileSecurity;
+	#ifdef ANALYZE_BS
+	fileHandle_t	bsLogFile;
+	#endif
 
 	// store latched cvars here that we want to get at often
 	int			maxclients;
@@ -446,6 +611,18 @@ typedef struct {
 										// we changed gametype
 
 	qboolean	restarted;				// waiting for a map_restart to fire
+
+	#ifdef DEBUGFPS
+	float	avgfps;
+	int		fpsSamples;
+	int		fpsFrameTime;
+	#endif
+
+	int 		lockedTeams;
+
+	#define G_BLUETEAM		0
+	#define G_REDTEAM		1
+	teamStats_t	teamstats[2];
 
 	int			numConnectedClients;
 	int			numNonSpectatorClients;	// includes connecting clients
@@ -466,6 +643,12 @@ typedef struct {
 	int			voteNo;
 	int			numVotingClients;		// set by CalculateRanks
 
+	#ifdef ANALYZE_BS
+	int 		lastBsClient;
+	bsRecord_t	lastSuspiciousBs;
+	char		lastSuspiciousBsInfo[256];
+	#endif
+
 	qboolean	votingGametype;
 	int			votingGametypeTo;
 
@@ -482,6 +665,10 @@ typedef struct {
 	char		*spawnVars[MAX_SPAWN_VARS][2];	// key / value pairs
 	int			numSpawnVarChars;
 	char		spawnVarChars[MAX_SPAWN_VARS_CHARS];
+
+	#define		UNPAUSE_COUNTDOWN	2000
+	int			unpauseTime;			//when level.time hits this, unpause the game if it is paused.
+	int			unpauseClient;
 
 	// intermission state
 	int			intermissionQueued;		// intermission was qualified, but
@@ -545,8 +732,8 @@ void RespawnItem( gentity_t *ent );
 
 void UseHoldableItem( gentity_t *ent );
 void PrecacheItem (gitem_t *it);
-gentity_t *Drop_Item( gentity_t *ent, gitem_t *item, float angle );
-gentity_t *LaunchItem( gitem_t *item, vec3_t origin, vec3_t velocity );
+gentity_t *Drop_Item( gentity_t *ent, gitem_t *item, float angle, int ammoCount );
+gentity_t *LaunchItem( gitem_t *item, vec3_t origin, vec3_t velocity, int ammoCount );
 void SetRespawn (gentity_t *ent, float delay);
 void G_SpawnItem (gentity_t *ent, gitem_t *item);
 void FinishSpawningItem( gentity_t *ent );
@@ -651,7 +838,8 @@ void G_Damage (gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 qboolean G_RadiusDamage (vec3_t origin, gentity_t *attacker, float damage, float radius, gentity_t *ignore, int mod);
 void body_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int damage, int meansOfDeath );
 void TossClientWeapon(gentity_t *self, vec3_t direction, float speed);
-void TossClientItems( gentity_t *self );
+// void TossClientItems( gentity_t *self );
+void TossClientItems( gentity_t *self, int meansOfDeath );
 void TossClientCubes( gentity_t *self );
 void ExplodeDeath( gentity_t *self );
 
@@ -677,7 +865,7 @@ void G_ReflectMissile( gentity_t *ent, gentity_t *missile, vec3_t forward );
 
 void G_RunMissile( gentity_t *ent );
 
-gentity_t *CreateMissile( vec3_t org, vec3_t dir, float vel, int life, 
+gentity_t *CreateMissile( vec3_t org, vec3_t dir, float vel, int life,
 							gentity_t *owner, qboolean altFire);
 void G_BounceProjectile( vec3_t start, vec3_t impact, vec3_t dir, vec3_t endout );
 void G_ExplodeMissile( gentity_t *ent );
@@ -784,7 +972,8 @@ const char *G_GetStripEdString(char *refSection, char *refName);
 // g_client.c
 //
 char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot );
-void ClientUserinfoChanged( int clientNum );
+// void ClientUserinfoChanged( int clientNum );
+void ClientUserinfoChanged( int clientNum, qboolean checkFlood );
 void ClientDisconnect( int clientNum );
 void ClientBegin( int clientNum, qboolean allowTeamReset );
 void ClientCommand( int clientNum );
@@ -815,6 +1004,7 @@ void Svcmd_GameMem_f( void );
 //
 void G_ReadSessionData( gclient_t *client );
 void G_InitSessionData( gclient_t *client, char *userinfo, qboolean isBot );
+// void G_InitSessionData( gclient_t *client, char *userinfo, qboolean isBot, const char *ip );
 
 void G_InitWorldSession( void );
 void G_WriteSessionData( void );
@@ -919,6 +1109,7 @@ extern	gentity_t		g_entities[MAX_GENTITIES];
 
 extern	vmCvar_t	g_gametype;
 extern	vmCvar_t	g_dedicated;
+extern	vmCvar_t	g_fps;
 extern	vmCvar_t	g_cheats;
 extern	vmCvar_t	g_maxclients;			// allow this many total, including spectators
 extern	vmCvar_t	g_maxGameClients;		// allow this many active
@@ -957,6 +1148,26 @@ extern	vmCvar_t	g_weaponRespawn;
 extern	vmCvar_t	g_weaponTeamRespawn;
 extern	vmCvar_t	g_adaptRespawn;
 extern	vmCvar_t	g_synchronousClients;
+
+extern	vmCvar_t	g_pauseGame;
+
+extern	vmCvar_t	g_minmsec;
+extern	vmCvar_t	g_maxmsec;
+extern	vmCvar_t	g_minefix;
+
+extern	vmCvar_t	g_moverfix;
+
+extern	vmCvar_t	g_logSecurity;
+extern	vmCvar_t	g_logKills;
+extern	vmCvar_t	g_logItems;
+extern	vmCvar_t	g_fairflag;
+extern	vmCvar_t	g_allowChatPause;
+extern	vmCvar_t	g_logbs;
+
+// extern	vmCvar_t	g_scorePlums;
+
+
+
 extern	vmCvar_t	g_motd;
 extern	vmCvar_t	g_warmup;
 extern	vmCvar_t	g_doWarmup;
@@ -974,6 +1185,9 @@ extern	vmCvar_t	g_blueteam;
 extern	vmCvar_t	g_smoothClients;
 extern	vmCvar_t	pmove_fixed;
 extern	vmCvar_t	pmove_msec;
+#ifndef LITE
+extern	vmCvar_t	pmove_float;
+#endif
 extern	vmCvar_t	g_rankings;
 extern	vmCvar_t	g_enableDust;
 extern	vmCvar_t	g_enableBreath;

@@ -23,6 +23,7 @@ vec4_t		colorDkGrey	= {0.25, 0.25, 0.25, 1};
 vec4_t		colorLtBlue	= {0.367f, 0.261f, 0.722f, 1};
 vec4_t		colorDkBlue	= {0.199f, 0.0f,   0.398f, 1};
 
+
 vec4_t	g_color_table[8] =
 	{
 	{0.0, 0.0, 0.0, 1.0},
@@ -34,6 +35,7 @@ vec4_t	g_color_table[8] =
 	{1.0, 0.0, 1.0, 1.0},
 	{1.0, 1.0, 1.0, 1.0},
 	};
+
 
 
 vec3_t	bytedirs[NUMVERTEXNORMALS] =
@@ -1331,6 +1333,7 @@ int irand(int min, int max)
 	return(result);
 }
 
+#ifdef Q3_VM
 float powf ( float x, int y )
 {
 	float r = x;
@@ -1338,4 +1341,5 @@ float powf ( float x, int y )
 		r = r * r;
 	return r;
 }
+#endif
 

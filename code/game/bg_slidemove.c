@@ -37,7 +37,8 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 	float		into;
 	vec3_t		endVelocity;
 	vec3_t		endClipVelocity;
-	
+
+
 	numbumps = 4;
 
 	VectorCopy (pm->ps->velocity, primal_velocity);
@@ -49,7 +50,7 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 		primal_velocity[2] = endVelocity[2];
 		if ( pml.groundPlane ) {
 			// slide along the ground plane
-			PM_ClipVelocity (pm->ps->velocity, pml.groundTrace.plane.normal, 
+			PM_ClipVelocity (pm->ps->velocity, pml.groundTrace.plane.normal,
 				pm->ps->velocity, OVERCLIP );
 		}
 	}
@@ -232,7 +233,7 @@ void PM_StepSlideMove( qboolean gravity ) {
 	VectorCopy (pm->ps->velocity, start_v);
 
 	if ( PM_SlideMove( gravity ) == 0 ) {
-		return;		// we got exactly where we wanted to go first try	
+		return;		// we got exactly where we wanted to go first try
 	}
 
 	if (pm->ps->fd.forcePowersActive & (1 << FP_SPEED))
@@ -368,18 +369,6 @@ void PM_StepSlideMove( qboolean gravity ) {
 		PM_ClipVelocity( pm->ps->velocity, trace.plane.normal, pm->ps->velocity, OVERCLIP );
 	}
 
-#if 0
-	// if the down trace can trace back to the original position directly, don't step
-	pm->trace( &trace, pm->ps->origin, pm->mins, pm->maxs, start_o, pm->ps->clientNum, pm->tracemask);
-	if ( trace.fraction == 1.0 ) {
-		// use the original move
-		VectorCopy (down_o, pm->ps->origin);
-		VectorCopy (down_v, pm->ps->velocity);
-		if ( pm->debugLevel ) {
-			Com_Printf("%i:bend\n", c_pmove);
-		}
-	} else 
-#endif
 	{
 		// use the step move
 		float	delta;

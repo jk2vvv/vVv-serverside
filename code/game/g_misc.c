@@ -64,6 +64,9 @@ TELEPORTERS
 
 void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles ) {
 	gentity_t	*tent;
+	qboolean noAngles;
+
+	noAngles = (angles[0] > 999999.0);
 
 	// use temp events at source and destination to prevent the effect
 	// from getting dropped by a second player event
@@ -82,16 +85,20 @@ void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles ) {
 	player->client->ps.origin[2] += 1;
 
 	// spit the player out
-	AngleVectors( angles, player->client->ps.velocity, NULL, NULL );
-	VectorScale( player->client->ps.velocity, 400, player->client->ps.velocity );
-	player->client->ps.pm_time = 160;		// hold time
-	player->client->ps.pm_flags |= PMF_TIME_KNOCKBACK;
+	if (!noAngles) {	//ioq3
+		AngleVectors( angles, player->client->ps.velocity, NULL, NULL );
+		VectorScale( player->client->ps.velocity, 400, player->client->ps.velocity );
+		player->client->ps.pm_time = 160;		// hold time
+		player->client->ps.pm_flags |= PMF_TIME_KNOCKBACK;
 
+		// toggle the teleport bit so the client knows to not lerp
+		player->client->ps.eFlags ^= EF_TELEPORT_BIT;
+
+		// set angles
+		SetClientViewAngle( player, angles );
+	}
 	// toggle the teleport bit so the client knows to not lerp
-	player->client->ps.eFlags ^= EF_TELEPORT_BIT;
-
-	// set angles
-	SetClientViewAngle( player, angles );
+	player->client->ps.eFlags ^= EF_TELEPORT_BIT;	//ioq3
 
 	// kill anything at the destination
 	if ( player->client->sess.sessionTeam != TEAM_SPECTATOR ) {
@@ -449,7 +456,7 @@ void HolocronThink(gentity_t *ent)
 			HolocronPopOut(ent);
 			ent->enemy->client->ps.holocronsCarried[ent->count] = 0;
 			ent->enemy = NULL;
-			
+
 			goto justthink;
 		}
 	}
@@ -577,16 +584,7 @@ void SP_misc_holocron(gentity_t *ent)
 	{
 		ent->count = NUM_FORCE_POWERS-1;
 	}
-/*
-	if (g_forcePowerDisable.integer &&
-		(g_forcePowerDisable.integer & (1 << ent->count)))
-	{
-		G_FreeEntity(ent);
-		return;
-	}
-*/
-	//No longer doing this, causing too many complaints about accidentally setting no force powers at all
-	//and starting a holocron game (making it basically just FFA)
+
 
 	ent->enemy = NULL;
 
@@ -730,7 +728,7 @@ void EnergyShieldStationSettings(gentity_t *ent)
 
 	if (!ent->count)
 	{
-		ent->count = 50; 
+		ent->count = 50;
 	}
 
 	G_SpawnInt("chargerate", "0", &ent->bolt_Head);
@@ -755,6 +753,9 @@ void shield_power_converter_use( gentity_t *self, gentity_t *other, gentity_t *a
 	{
 		return;
 	}
+
+	if (g_pauseGame.integer)
+		return;
 
 	if (self->setTime < level.time)
 	{
@@ -933,7 +934,7 @@ void EnergyAmmoStationSettings(gentity_t *ent)
 
 	if (!ent->count)
 	{
-		ent->count = 100; 
+		ent->count = 100;
 	}
 }
 
@@ -1064,7 +1065,7 @@ void EnergyHealthStationSettings(gentity_t *ent)
 
 	if (!ent->count)
 	{
-		ent->count = 100; 
+		ent->count = 100;
 	}
 }
 
@@ -1231,7 +1232,7 @@ gentity_t *CreateNewDamageBox( gentity_t *ent )
 	//ever be used on the server.
 	dmgBox = G_Spawn();
 	dmgBox->classname = "dmg_box";
-			
+
 	dmgBox->r.svFlags = SVF_USE_CURRENT_ORIGIN;
 	dmgBox->r.ownerNum = ent->s.number;
 
@@ -1529,13 +1530,13 @@ void SP_fx_runner( gentity_t *ent )
 		return;
 	}
 
-	// Try and associate an effect file, unfortunately we won't know if this worked or not 
+	// Try and associate an effect file, unfortunately we won't know if this worked or not
 	//	until the CGAME trys to register it...
 	ent->bolt_Head = G_EffectIndex( fxFile );
 	//It is dirty, yes. But no one likes adding things to the entity structure.
 
 	// Give us a bit of time to spawn in the other entities, since we may have to target one of 'em
-	ent->think = fx_runner_link; 
+	ent->think = fx_runner_link;
 	ent->nextthink = level.time + 300;
 
 	// Save our position and link us up!

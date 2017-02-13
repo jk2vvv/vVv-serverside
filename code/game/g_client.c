@@ -1,7 +1,7 @@
 // Copyright (C) 1999-2000 Id Software, Inc.
 //
 #include "g_local.h"
-#include "..\ghoul2\g2.h"
+#include "../ghoul2/G2.h"
 
 // g_client.c -- client functions that don't happen every frame
 
@@ -231,7 +231,7 @@ void JMSaberTouch(gentity_t *self, gentity_t *other, trace_t *trace)
 	other->s.weapon = WP_SABER;
 	G_AddEvent(other, EV_BECOME_JEDIMASTER, 0);
 
-	// Track the jedi master 
+	// Track the jedi master
 	trap_SetConfigstring ( CS_CLIENT_JEDIMASTER, va("%i", other->s.number ) );
 
 	if (g_spawnInvulnerability.integer)
@@ -504,34 +504,6 @@ Chooses a player start, deathmatch start, etc
 */
 gentity_t *SelectSpawnPoint ( vec3_t avoidPoint, vec3_t origin, vec3_t angles ) {
 	return SelectRandomFurthestSpawnPoint( avoidPoint, origin, angles );
-
-	/*
-	gentity_t	*spot;
-	gentity_t	*nearestSpot;
-
-	nearestSpot = SelectNearestDeathmatchSpawnPoint( avoidPoint );
-
-	spot = SelectRandomDeathmatchSpawnPoint ( );
-	if ( spot == nearestSpot ) {
-		// roll again if it would be real close to point of death
-		spot = SelectRandomDeathmatchSpawnPoint ( );
-		if ( spot == nearestSpot ) {
-			// last try
-			spot = SelectRandomDeathmatchSpawnPoint ( );
-		}		
-	}
-
-	// find a single player start spot
-	if (!spot) {
-		G_Error( "Couldn't find a spawn point" );
-	}
-
-	VectorCopy (spot->s.origin, origin);
-	origin[2] += 9;
-	VectorCopy (spot->s.angles, angles);
-
-	return spot;
-	*/
 }
 
 /*
@@ -626,7 +598,7 @@ void BodySink( gentity_t *ent ) {
 		// the body ques are never actually freed, they are just unlinked
 		trap_UnlinkEntity( ent );
 		ent->physicsObject = qfalse;
-		return;	
+		return;
 	}
 	ent->nextthink = level.time + 100;
 	ent->s.pos.trBase[2] -= 1;
@@ -852,31 +824,15 @@ team_t PickTeam( int ignoreClientNum ) {
 	return TEAM_BLUE;
 }
 
-/*
-===========
-ForceClientSkin
-
-Forces a client's skin (for teamplay)
-===========
-*/
-/*
-static void ForceClientSkin( gclient_t *client, char *model, const char *skin ) {
-	char *p;
-
-	if ((p = Q_strrchr(model, '/')) != 0) {
-		*p = 0;
-	}
-
-	Q_strcat(model, MAX_QPATH, "/");
-	Q_strcat(model, MAX_QPATH, skin);
-}
-*/
 
 /*
 ===========
 ClientCheckName
 ============
 */
+
+#define MAX_COLORLESS_NAME_LEN	36
+
 static void ClientCleanName( const char *in, char *out, int outSize ) {
 	int		len, colorlessLen;
 	char	ch;
@@ -903,6 +859,13 @@ static void ClientCleanName( const char *in, char *out, int outSize ) {
 			continue;
 		}
 
+		// if (ch < ' ' && ch != 11) {
+		// if ( (ch < ' ' && ch != 11) || ch > '~' ) {
+		if ( ch < ' ' || ch > '~' ) {
+			//discard weird/unprintable chars
+			ch = '.';
+		}
+
 		// check colors
 		if( ch == Q_COLOR_ESCAPE ) {
 			// solo trailing carat is not a color prefix
@@ -910,8 +873,9 @@ static void ClientCleanName( const char *in, char *out, int outSize ) {
 				break;
 			}
 
-			// don't allow black in a name, period
-			if( ColorIndex(*in) == 0 ) {
+
+			//only allow printable chars as color codes
+			if (*in < ' ' || *in > '~') {
 				in++;
 				continue;
 			}
@@ -929,12 +893,10 @@ static void ClientCleanName( const char *in, char *out, int outSize ) {
 
 		// don't allow too many consecutive spaces
 		if( ch == ' ' ) {
-			spaces++;
-			if( spaces > 3 ) {
+			if( ++spaces > 3 ) {
 				continue;
 			}
-		}
-		else {
+		} else {
 			spaces = 0;
 		}
 
@@ -943,7 +905,9 @@ static void ClientCleanName( const char *in, char *out, int outSize ) {
 		}
 
 		*out++ = ch;
-		colorlessLen++;
+
+		if (++colorlessLen >= MAX_COLORLESS_NAME_LEN)
+			break;
 		len++;
 	}
 	*out = 0;
@@ -969,8 +933,8 @@ void G_DebugWrite(const char *path, const char *text)
 ===========
 SetupGameGhoul2Model
 
-There are two ghoul2 model instances per player (actually three).  One is on the clientinfo (the base for the client side 
-player, and copied for player spawns and for corpses).  One is attached to the centity itself, which is the model acutally 
+There are two ghoul2 model instances per player (actually three).  One is on the clientinfo (the base for the client side
+player, and copied for player spawns and for corpses).  One is attached to the centity itself, which is the model acutally
 animated and rendered by the system.  The final is the game ghoul2 model.  This is animated by pmove on the server, and
 is used for determining where the lightsaber should be, and for per-poly collision tests.
 ===========
@@ -989,21 +953,6 @@ void SetupGameGhoul2Model(gclient_t *client, char *modelname)
 	{
 		trap_G2API_CleanGhoul2Models(&(client->ghoul2));
 	}
-
-	/*
-	Com_sprintf( afilename, sizeof( afilename ), "models/players/%s/model.glm", modelname );
-	handle = trap_G2API_InitGhoul2Model(&client->ghoul2, afilename, 0, 0, -20, 0, 0);
-	if (handle<0)
-	{
-		Com_sprintf( afilename, sizeof( afilename ), "models/players/kyle/model.glm" );
-		handle = trap_G2API_InitGhoul2Model(&client->ghoul2, afilename, 0, 0, -20, 0, 0);
-
-		if (handle<0)
-		{
-			return;
-		}
-	}
-	*/
 
 	//rww - just load the "standard" model for the server"
 	if (!precachedKyle)
@@ -1051,7 +1000,7 @@ void SetupGameGhoul2Model(gclient_t *client, char *modelname)
 		{
 			strcpy(slash, "/animation.cfg");
 		}	// Now afilename holds just the path to the animation.cfg
-		else 
+		else
 		{	// Didn't find any slashes, this is a raw filename right in base (whish isn't a good thing)
 			return;
 		}
@@ -1090,7 +1039,7 @@ void SetupGameGhoul2Model(gclient_t *client, char *modelname)
 
 	if (g2SaberInstance)
 	{
-		trap_G2API_CopySpecificGhoul2Model(g2SaberInstance, 0, client->ghoul2, 1); 
+		trap_G2API_CopySpecificGhoul2Model(g2SaberInstance, 0, client->ghoul2, 1);
 	}
 }
 
@@ -1108,20 +1057,74 @@ The game can override any of the settings and call trap_SetUserinfo
 if desired.
 ============
 */
-void ClientUserinfoChanged( int clientNum ) {
-	gentity_t *ent;
-	int		teamTask, teamLeader, team, health;
-	char	*s;
-	char	model[MAX_QPATH];
-	//char	headModel[MAX_QPATH];
-	char	forcePowers[MAX_QPATH];
-	char	oldname[MAX_STRING_CHARS];
+
+qboolean G_StringStartsWithCaseIns (const char *str, const char *check) {
+
+	if (!str || !check)
+		return qfalse;
+
+	while (*str) {
+
+		if (*check == 0)
+			return qtrue;
+
+		if ( tolower(*str) != tolower(*check) )
+			return qfalse;
+
+		++str;
+		++check;
+	}
+
+	if (*check == 0)
+		return qtrue;
+
+	return qfalse;
+}
+
+
+qboolean G_StringStartsWith (const char *str, const char *check) {
+
+	if (!str || !check)
+		return qfalse;
+
+	while (*str) {
+
+		if (*check == 0) {
+			return qtrue;
+		}
+
+		if (*str != *check) {
+			return qfalse;
+		}
+
+		++str;
+		++check;
+	}
+
+	if (*check == 0)
+		return qtrue;
+
+	return qfalse;
+}
+
+
+// void ClientUserinfoChanged( int clientNum ) {
+void ClientUserinfoChanged( int clientNum, qboolean checkFlood ) {
+	gentity_t 	*ent;
+	int			teamTask, teamLeader, team, health;
+	char		*s;
+	char		model[MAX_QPATH];
+	char		forcePowers[MAX_QPATH];
+	char		oldname[MAX_INFO_STRING];
 	gclient_t	*client;
-	char	c1[MAX_INFO_STRING];
-	char	c2[MAX_INFO_STRING];
-	char	redTeam[MAX_INFO_STRING];
-	char	blueTeam[MAX_INFO_STRING];
-	char	userinfo[MAX_INFO_STRING];
+	char		c1[MAX_INFO_STRING];
+	char		c2[MAX_INFO_STRING];
+	char		redTeam[MAX_INFO_STRING];
+	char		blueTeam[MAX_INFO_STRING];
+	char		userinfo[MAX_INFO_STRING] = {0};
+	qboolean	changedName	= qfalse;
+	int x;
+
 
 	ent = g_entities + clientNum;
 	client = ent->client;
@@ -1130,145 +1133,142 @@ void ClientUserinfoChanged( int clientNum ) {
 
 	// check for malformed or illegal info strings
 	if ( !Info_Validate(userinfo) ) {
-		strcpy (userinfo, "\\name\\badinfo");
+		Q_strncpyz (userinfo, "\\name\\badinfo", sizeof(userinfo));
+		G_SecurityLogPrint("Bad userinfo", ent);
 	}
+
+/* 	G_Printf("ClientUserinfoChanged %d:\n", clientNum);
+	G_Printf("\"%s\"\n", userinfo); */
+
 
 	// check for local client
 	s = Info_ValueForKey( userinfo, "ip" );
-	if ( !strcmp( s, "localhost" ) ) {
+	if ( !strcmp( s, "localhost" ) )
 		client->pers.localClient = qtrue;
-	}
 
 	// check the item prediction
 	s = Info_ValueForKey( userinfo, "cg_predictItems" );
-	if ( !atoi( s ) ) {
+	if ( !atoi( s ) )
 		client->pers.predictItemPickup = qfalse;
-	} else {
+	else
 		client->pers.predictItemPickup = qtrue;
-	}
 
 	// set name
 	Q_strncpyz ( oldname, client->pers.netname, sizeof( oldname ) );
+
 	s = Info_ValueForKey (userinfo, "name");
 	ClientCleanName( s, client->pers.netname, sizeof(client->pers.netname) );
 
+	if (client->sess.amflags & AMFLAG_LOCKEDNAME && oldname[0])	//do these checks for map_restarts where the locked name wont survive
+		Q_strncpyz ( client->pers.netname, oldname, sizeof( client->pers.netname ) );
+
 	if ( client->sess.sessionTeam == TEAM_SPECTATOR ) {
-		if ( client->sess.spectatorState == SPECTATOR_SCOREBOARD ) {
+		if ( client->sess.spectatorState == SPECTATOR_SCOREBOARD )
 			Q_strncpyz( client->pers.netname, "scoreboard", sizeof(client->pers.netname) );
-		}
 	}
+
+	Q_strncpyz( client->pers.netnameClean, client->pers.netname, sizeof(client->pers.netnameClean) );
+	Q_CleanStr( client->pers.netnameClean );
+
+	//Update the correct name in the engine
+	Info_SetValueForKey(userinfo, "name", client->pers.netname);
 
 	if ( client->pers.connected == CON_CONNECTED ) {
 		if ( strcmp( oldname, client->pers.netname ) ) {
 			trap_SendServerCommand( -1, va("print \"%s" S_COLOR_WHITE " %s %s\n\"", oldname, G_GetStripEdString("SVINGAME", "PLRENAME"),
 				client->pers.netname) );
+
+			changedName = qtrue;
 		}
 	}
+	else if ( oldname[0] && strcmp( oldname, client->pers.netname ) )
+		changedName = qtrue;
+
+	if (changedName)
+		G_LogPrintf( "ClientRename  %02d \"%s\" -> \"%s\" (%s)\n", clientNum, oldname, client->pers.netname, client->sess.ip );
 
 	// set max health
 	health = 100; //atoi( Info_ValueForKey( userinfo, "handicap" ) );
 	client->pers.maxHealth = health;
-	if ( client->pers.maxHealth < 1 || client->pers.maxHealth > 100 ) {
-		client->pers.maxHealth = 100;
-	}
 	client->ps.stats[STAT_MAX_HEALTH] = client->pers.maxHealth;
 
 	// set model
-	if( g_gametype.integer >= GT_TEAM ) {
+	if( g_gametype.integer >= GT_TEAM )
 		Q_strncpyz( model, Info_ValueForKey (userinfo, "team_model"), sizeof( model ) );
-		//Q_strncpyz( headModel, Info_ValueForKey (userinfo, "team_headmodel"), sizeof( headModel ) );
-	} else {
+	else
 		Q_strncpyz( model, Info_ValueForKey (userinfo, "model"), sizeof( model ) );
-		//Q_strncpyz( headModel, Info_ValueForKey (userinfo, "headmodel"), sizeof( headModel ) );
+
+	//galakmech fix
+	if (G_StringStartsWithCaseIns(model, "galak_mech"))
+	{
+		Q_strncpyz(model, "galak/default", sizeof(model));
+		Info_SetValueForKey(userinfo, "model", model);
+		Info_SetValueForKey(userinfo, "team_model", model);
 	}
 
-	Q_strncpyz( forcePowers, Info_ValueForKey (userinfo, "forcepowers"), sizeof( forcePowers ) );
+	// trap_SetUserinfo(clientNum, userinfo);	//incase we updated model/name/team_model, let engine know
 
 	// bots set their team a few frames later
 	if (g_gametype.integer >= GT_TEAM && g_entities[clientNum].r.svFlags & SVF_BOT) {
 		s = Info_ValueForKey( userinfo, "team" );
-		if ( !Q_stricmp( s, "red" ) || !Q_stricmp( s, "r" ) ) {
+		if ( !Q_stricmp( s, "red" ) || !Q_stricmp( s, "r" ) )
 			team = TEAM_RED;
-		} else if ( !Q_stricmp( s, "blue" ) || !Q_stricmp( s, "b" ) ) {
+		else if ( !Q_stricmp( s, "blue" ) || !Q_stricmp( s, "b" ) )
 			team = TEAM_BLUE;
-		} else {
-			// pick the team with the least number of players
-			team = PickTeam( clientNum );
-		}
+		else if (!Q_stricmp(s, "s") || !Q_stricmpn(s, "spec", 4))	//add
+			team = TEAM_SPECTATOR;
+		else
+			team = PickTeam( clientNum );		// pick the team with the least number of players
 	}
-	else {
+	else
 		team = client->sess.sessionTeam;
-	}
 
-/*	NOTE: all client side now
-
-	// team
-	switch( team ) {
-	case TEAM_RED:
-		ForceClientSkin(client, model, "red");
-//		ForceClientSkin(client, headModel, "red");
-		break;
-	case TEAM_BLUE:
-		ForceClientSkin(client, model, "blue");
-//		ForceClientSkin(client, headModel, "blue");
-		break;
-	}
-	// don't ever use a default skin in teamplay, it would just waste memory
-	// however bots will always join a team but they spawn in as spectator
-	if ( g_gametype.integer >= GT_TEAM && team == TEAM_SPECTATOR) {
-		ForceClientSkin(client, model, "red");
-//		ForceClientSkin(client, headModel, "red");
-	}
-*/
-
-	if (g_gametype.integer >= GT_TEAM) {
+/* 	if (g_gametype.integer >= GT_TEAM) {
 		client->pers.teamInfo = qtrue;
-	} else {
+	} else { */
+	if (1) {
+		int _atoi;
 		s = Info_ValueForKey( userinfo, "teamoverlay" );
-		if ( ! *s || atoi( s ) != 0 ) {
-			client->pers.teamInfo = qtrue;
-		} else {
-			client->pers.teamInfo = qfalse;
-		}
+		
+		_atoi = atoi( s );
+		if ( _atoi == 2 )
+			client->pers.teamInfo = 2;
+		else if ( !*s || _atoi != 0 )
+			client->pers.teamInfo = 1;
+		else
+			client->pers.teamInfo = 0;
 	}
-	/*
-	s = Info_ValueForKey( userinfo, "cg_pmove_fixed" );
-	if ( !*s || atoi( s ) == 0 ) {
-		client->pers.pmoveFixed = qfalse;
-	}
-	else {
-		client->pers.pmoveFixed = qtrue;
-	}
-	*/
 
 	// team task (0 = none, 1 = offence, 2 = defence)
 	teamTask = atoi(Info_ValueForKey(userinfo, "teamtask"));
-	// team Leader (1 = leader, 0 is normal player)
 	teamLeader = client->sess.teamLeader;
 
 	// colors
-	strcpy(c1, Info_ValueForKey( userinfo, "color1" ));
-	strcpy(c2, Info_ValueForKey( userinfo, "color2" ));
+	Q_strncpyz(c1, Info_ValueForKey( userinfo, "color1" ), sizeof(c1));
+	Q_strncpyz(c2, Info_ValueForKey( userinfo, "color2" ), sizeof(c2));
 
-	strcpy(redTeam, Info_ValueForKey( userinfo, "g_redteam" ));
-	strcpy(blueTeam, Info_ValueForKey( userinfo, "g_blueteam" ));
+	Q_strncpyz(redTeam, Info_ValueForKey( userinfo, "g_redteam" ), sizeof(redTeam));
+	Q_strncpyz(blueTeam, Info_ValueForKey( userinfo, "g_blueteam" ), sizeof(blueTeam));
 
 	// send over a subset of the userinfo keys so other clients can
 	// print scoreboards, display models, and play custom sounds
 	if ( ent->r.svFlags & SVF_BOT ) {
 		s = va("n\\%s\\t\\%i\\model\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\skill\\%s\\tt\\%d\\tl\\%d",
-			client->pers.netname, team, model,  c1, c2, 
+			client->pers.netname, team, model,  c1, c2,
 			client->pers.maxHealth, client->sess.wins, client->sess.losses,
 			Info_ValueForKey( userinfo, "skill" ), teamTask, teamLeader );
 	} else {
 		s = va("n\\%s\\t\\%i\\model\\%s\\g_redteam\\%s\\g_blueteam\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\tt\\%d\\tl\\%d",
-			client->pers.netname, client->sess.sessionTeam, model, redTeam, blueTeam, c1, c2, 
+			client->pers.netname, client->sess.sessionTeam, model, redTeam, blueTeam, c1, c2,
 			client->pers.maxHealth, client->sess.wins, client->sess.losses, teamTask, teamLeader);
 	}
 
-	trap_SetConfigstring( CS_PLAYERS+clientNum, s );
+	trap_SetConfigstring( CS_PLAYERS + clientNum, s );
 
-	G_LogPrintf( "ClientUserinfoChanged: %i %s\n", clientNum, s );
+	// G_LogPrintf( "ClientUserinfoChanged: %i %s\n", clientNum, s );
+
+	if (checkFlood)
+		client->pers.userinfoChangeTime = level.time;
 }
 
 
@@ -1292,21 +1292,23 @@ to the server machine, but qfalse on map changes and tournement
 restarts.
 ============
 */
+
+
 char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 	char		*value;
-//	char		*areabits;
-	gclient_t	*client;
+	char		OkRealIP[64] = {0};
 	char		userinfo[MAX_INFO_STRING];
+	gclient_t	*client;
 	gentity_t	*ent;
 	gentity_t	*te;
 
 	ent = &g_entities[ clientNum ];
 
 	trap_GetUserinfo( clientNum, userinfo, sizeof( userinfo ) );
-
 	// check to see if they are on the banned IP list
-	value = Info_ValueForKey (userinfo, "ip");
-	if ( G_FilterPacket( value ) ) {
+	Q_strncpyz(OkRealIP, Info_ValueForKey (userinfo, "ip"), sizeof(OkRealIP));
+
+	if ( G_FilterPacket( OkRealIP ) ) {
 		return "Banned.";
 	}
 
@@ -1315,7 +1317,22 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 		value = Info_ValueForKey (userinfo, "password");
 		if ( g_password.string[0] && Q_stricmp( g_password.string, "none" ) &&
 			strcmp( g_password.string, value) != 0) {
-			return "Invalid password";
+
+			static char sTemp[1024];
+
+			Q_strncpyz(sTemp, G_GetStripEdString("SVINGAME","INVALID_PASSWORD"), sizeof (sTemp) );
+			return sTemp;// return "Invalid password";
+		}
+	}
+
+	if ( !isBot && firstTime )
+	{
+		//OpenJK add
+		if ( !OkRealIP[0] )
+		{//No IP sent when connecting, probably an unban hack attempt
+			client->pers.connected = CON_DISCONNECTED;
+			G_SecurityLogPrint( "Client sent no IP when connecting", &g_entities[clientNum] );
+			return "Bad userinfo";
 		}
 	}
 
@@ -1323,14 +1340,27 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 	ent->client = level.clients + clientNum;
 	client = ent->client;
 
-//	areabits = client->areabits;
-
 	memset( client, 0, sizeof(*client) );
+
+
+	client->pers.connectTime = level.time;
+	client->pers.lastActionTime = level.time;
 
 	client->pers.connected = CON_CONNECTING;
 
 	// read or initialize the session data
 	if ( firstTime || level.newSession ) {
+		char *pch = strchr(OkRealIP, ':');
+
+		//truncate everything after and including ':'
+		if (pch)
+			*pch = 0;
+
+		//remove the port from the ip.
+		Q_strncpyz(client->sess.ip, OkRealIP, sizeof(client->sess.ip));
+
+		StringToIP(OkRealIP, client->sess.ipb);	//save his ip bytes
+
 		G_InitSessionData( client, userinfo, isBot );
 	}
 	G_ReadSessionData( client );
@@ -1343,19 +1373,20 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 		}
 	}
 
-	// get and distribute relevent paramters
-	G_LogPrintf( "ClientConnect: %i\n", clientNum );
-	ClientUserinfoChanged( clientNum );
+	// get and distribute relevant parameters
+	ClientUserinfoChanged( clientNum, qfalse );
+
+	G_LogPrintf( "ClientConnect %02d \"%s\" (%s)\n", clientNum, client->pers.netname, isBot ? "bot" : OkRealIP );
+
+
+	G_SecurityLogPrint( "Connect   ", &g_entities[clientNum] );
 
 	// don't do the "xxx connected" messages if they were caried over from previous level
-	if ( firstTime ) {
+	if ( firstTime )
 		trap_SendServerCommand( -1, va("print \"%s" S_COLOR_WHITE " %s\n\"", client->pers.netname, G_GetStripEdString("SVINGAME", "PLCONNECT")) );
-	}
 
-	if ( g_gametype.integer >= GT_TEAM &&
-		client->sess.sessionTeam != TEAM_SPECTATOR ) {
+	if ( g_gametype.integer >= GT_TEAM && client->sess.sessionTeam != TEAM_SPECTATOR )
 		BroadcastTeamChange( client, -1 );
-	}
 
 	// count current clients and rank for scoreboard
 	CalculateRanks();
@@ -1364,11 +1395,11 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 	te->r.svFlags |= SVF_BROADCAST;
 	te->s.eventParm = clientNum;
 
-	// for statistics
-//	client->areabits = areabits;
-//	if ( !client->areabits )
-//		client->areabits = G_Alloc( (trap_AAS_PointReachabilityAreaIndex( NULL ) + 7) / 8 );
-
+	#ifndef LITE
+	if (firstTime)
+		G_SendClientPrint( clientNum, "Server is running ^1[ vVv ] ^7serverside mode. Use ^1/%s^7 for more info.\n", HELP_CMD );
+	#endif
+	
 	return NULL;
 }
 
@@ -1401,7 +1432,7 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 
 			//SetTeam(ent, "");
 			ent->client->sess.sessionTeam = PickTeam(-1);
-			trap_GetUserinfo(clientNum, userinfo, MAX_INFO_STRING);
+			trap_GetUserinfo(clientNum, userinfo, sizeof(userinfo));
 
 			if (ent->client->sess.sessionTeam == TEAM_SPECTATOR)
 			{
@@ -1427,7 +1458,7 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 			G_ReadSessionData( ent->client );
 			ent->client->sess.sessionTeam = preSess;
 			G_WriteClientSessionData(ent->client);
-			ClientUserinfoChanged( clientNum );
+			ClientUserinfoChanged( clientNum, qfalse );
 			ClientBegin(clientNum, qfalse);
 			return;
 		}
@@ -1454,6 +1485,8 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 	// world to the new position
 	flags = client->ps.eFlags;
 
+	DeathmatchScoreboardMessage( ent );		//add so you get fresh scores once joining/changing teams.
+
 	i = 0;
 
 	while (i < NUM_FORCE_POWERS)
@@ -1467,8 +1500,7 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 
 	i = TRACK_CHANNEL_1;
 
-	while (i < NUM_TRACK_CHANNELS)
-	{
+	while (i < NUM_TRACK_CHANNELS) {
 		if (ent->client->ps.fd.killSoundEntIndex[i-50] && ent->client->ps.fd.killSoundEntIndex[i-50] < MAX_GENTITIES && ent->client->ps.fd.killSoundEntIndex[i-50] > 0)
 		{
 			G_MuteSound(ent->client->ps.fd.killSoundEntIndex[i-50], CHAN_VOICE);
@@ -1493,8 +1525,7 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 	modelname = Info_ValueForKey (userinfo, "model");
 	SetupGameGhoul2Model(client, modelname);
 
-	if (ent->client->ghoul2)
-	{
+	if (ent->client->ghoul2) {
 		ent->bolt_Head = trap_G2API_AddBolt(ent->client->ghoul2, 0, "cranium");
 		ent->bolt_Waist = trap_G2API_AddBolt(ent->client->ghoul2, 0, "thoracic");
 		ent->bolt_LArm = trap_G2API_AddBolt(ent->client->ghoul2, 0, "lradius");
@@ -1516,7 +1547,8 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 			trap_SendServerCommand( -1, va("print \"%s" S_COLOR_WHITE " %s\n\"", client->pers.netname, G_GetStripEdString("SVINGAME", "PLENTER")) );
 		}
 	}
-	G_LogPrintf( "ClientBegin: %i\n", clientNum );
+
+	G_LogPrintf( "ClientBegin   %02d \"%s\" (team %s)\n", clientNum, client->pers.netnameClean, TeamName(client->sess.sessionTeam) );
 
 	// count current clients and rank for scoreboard
 	CalculateRanks();
@@ -1565,20 +1597,20 @@ void ClientSpawn(gentity_t *ent) {
 	// do it before setting health back up, so farthest
 	// ranging doesn't count this client
 	if ( client->sess.sessionTeam == TEAM_SPECTATOR ) {
-		spawnPoint = SelectSpectatorSpawnPoint ( 
+		spawnPoint = SelectSpectatorSpawnPoint (
 						spawn_origin, spawn_angles);
 	} else if (g_gametype.integer == GT_CTF || g_gametype.integer == GT_CTY) {
 		// all base oriented team games use the CTF spawn points
-		spawnPoint = SelectCTFSpawnPoint ( 
-						client->sess.sessionTeam, 
-						client->pers.teamState.state, 
+		spawnPoint = SelectCTFSpawnPoint (
+						client->sess.sessionTeam,
+						client->pers.teamState.state,
 						spawn_origin, spawn_angles);
 	}
 	else if (g_gametype.integer == GT_SAGA)
 	{
-		spawnPoint = SelectSagaSpawnPoint ( 
-						client->sess.sessionTeam, 
-						client->pers.teamState.state, 
+		spawnPoint = SelectSagaSpawnPoint (
+						client->sess.sessionTeam,
+						client->pers.teamState.state,
 						spawn_origin, spawn_angles);
 	}
 	else {
@@ -1589,8 +1621,8 @@ void ClientSpawn(gentity_t *ent) {
 				spawnPoint = SelectInitialSpawnPoint( spawn_origin, spawn_angles );
 			} else {
 				// don't spawn near existing origin if possible
-				spawnPoint = SelectSpawnPoint ( 
-					client->ps.origin, 
+				spawnPoint = SelectSpawnPoint (
+					client->ps.origin,
 					spawn_origin, spawn_angles);
 			}
 
@@ -1634,7 +1666,9 @@ void ClientSpawn(gentity_t *ent) {
 
 	saveSaberNum = client->ps.saberEntityNum;
 
+
 	memset (client, 0, sizeof(*client)); // bk FIXME: Com_Memset?
+
 
 	//rww - Don't wipe the ghoul2 instance or the animation data
 	client->ghoul2 = ghoul2save;
@@ -1685,7 +1719,7 @@ void ClientSpawn(gentity_t *ent) {
 	ent->waterlevel = 0;
 	ent->watertype = 0;
 	ent->flags = 0;
-	
+
 	VectorCopy (playerMins, ent->r.mins);
 	VectorCopy (playerMaxs, ent->r.maxs);
 
@@ -1747,10 +1781,6 @@ void ClientSpawn(gentity_t *ent) {
 		client->ps.weapon = WP_STUN_BATON;
 	}
 
-	/*
-	client->ps.stats[STAT_HOLDABLE_ITEMS] |= ( 1 << HI_BINOCULARS );
-	client->ps.stats[STAT_HOLDABLE_ITEM] = BG_GetItemIndexByTag(HI_BINOCULARS, IT_HOLDABLE);
-	*/
 
 	client->ps.stats[STAT_HOLDABLE_ITEMS] = 0;
 	client->ps.stats[STAT_HOLDABLE_ITEM] = 0;
@@ -1763,18 +1793,7 @@ void ClientSpawn(gentity_t *ent) {
 	}
 
 	client->ps.ammo[AMMO_BLASTER] = 100; //ammoData[AMMO_BLASTER].max; //100 seems fair.
-//	client->ps.ammo[AMMO_POWERCELL] = ammoData[AMMO_POWERCELL].max;
-//	client->ps.ammo[AMMO_FORCE] = ammoData[AMMO_FORCE].max;
-//	client->ps.ammo[AMMO_METAL_BOLTS] = ammoData[AMMO_METAL_BOLTS].max;
-//	client->ps.ammo[AMMO_ROCKETS] = ammoData[AMMO_ROCKETS].max;
-/*
-	client->ps.stats[STAT_WEAPONS] = ( 1 << WP_BRYAR_PISTOL);
-	if ( g_gametype.integer == GT_TEAM ) {
-		client->ps.ammo[WP_BRYAR_PISTOL] = 50;
-	} else {
-		client->ps.ammo[WP_BRYAR_PISTOL] = 100;
-	}
-*/
+
 	client->ps.rocketLockIndex = MAX_CLIENTS;
 	client->ps.rocketLockTime = 0;
 
@@ -1829,7 +1848,7 @@ void ClientSpawn(gentity_t *ent) {
 
 	client->respawnTime = level.time;
 	client->inactivityTime = level.time + g_inactivity.integer * 1000;
-	client->latched_buttons = 0;
+	// client->latched_buttons = 0;
 
 	// set default animations
 	client->ps.torsoAnim = WeaponReadyAnim[client->ps.weapon];
@@ -1879,6 +1898,7 @@ void ClientSpawn(gentity_t *ent) {
 }
 
 
+
 /*
 ===========
 ClientDisconnect
@@ -1901,7 +1921,7 @@ void ClientDisconnect( int clientNum ) {
 	G_RemoveQueuedBotBegin( clientNum );
 
 	ent = g_entities + clientNum;
-	if ( !ent->client ) {
+	if (!ent->client || ent->client->pers.connected == CON_DISCONNECTED) {
 		return;
 	}
 
@@ -1935,27 +1955,36 @@ void ClientDisconnect( int clientNum ) {
 			&& level.clients[i].sess.spectatorClient == clientNum ) {
 			StopFollowing( &g_entities[i] );
 		}
+
+		if (level.clients[i].sess.ignoredclients & (1 << clientNum))
+			level.clients[i].sess.ignoredclients &= ~(1 << clientNum);
 	}
 
+	level.clients[i].sess.ignoredclients = 0;
+	level.clients[i].sess.amflags = 0;
+	level.clients[i].sess.pmoveMsec = 0;
+
 	// send effect if they were completely connected
-	if ( ent->client->pers.connected == CON_CONNECTED 
+	if ( ent->client->pers.connected == CON_CONNECTED
 		&& ent->client->sess.sessionTeam != TEAM_SPECTATOR ) {
 		tent = G_TempEntity( ent->client->ps.origin, EV_PLAYER_TELEPORT_OUT );
 		tent->s.clientNum = ent->s.clientNum;
 
 		// They don't get to take powerups with them!
 		// Especially important for stuff like CTF flags
-		TossClientItems( ent );
+		// TossClientItems( ent );
+		TossClientItems( ent, -1 );
 	}
 
-	G_LogPrintf( "ClientDisconnect: %i\n", clientNum );
+	G_LogPrintf( "ClientDisco   %02d \"%s\" (%s)\n", clientNum, ent->client->pers.netname, (ent->r.svFlags & SVF_BOT) ? "bot" : ent->client->sess.ip );
+	G_SecurityLogPrint( "Disconnect", ent );
 
 	// if we are playing in tourney mode and losing, give a win to the other player
 	if ( (g_gametype.integer == GT_TOURNAMENT )
 		&& !level.intermissiontime
 		&& !level.warmupTime && level.sortedClients[1] == clientNum ) {
 		level.clients[ level.sortedClients[0] ].sess.wins++;
-		ClientUserinfoChanged( level.sortedClients[0] );
+		ClientUserinfoChanged( level.sortedClients[0], qfalse );
 	}
 
 	trap_UnlinkEntity (ent);

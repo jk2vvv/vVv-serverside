@@ -76,6 +76,8 @@ short   ShortSwap (short l);
 int		LongSwap (int l);
 float	FloatSwap (const float *f);
 
+char *Q_stristr(const char *str, const char *charset);
+
 //======================= WIN32 DEFINES =================================
 
 #ifdef WIN32
@@ -100,7 +102,7 @@ float	FloatSwap (const float *f);
 #endif
 #endif
 
-#define ID_INLINE __inline 
+#define ID_INLINE __inline
 
 static ID_INLINE short BigShort( short l) { return ShortSwap(l); }
 #define LittleShort
@@ -121,7 +123,7 @@ static ID_INLINE float BigFloat(const float *l) { FloatSwap(l); }
 #define __cdecl
 #define __declspec(x)
 #define stricmp strcasecmp
-#define ID_INLINE inline 
+#define ID_INLINE inline
 
 #ifdef __ppc__
 #define CPUSTRING	"MacOSX-ppc"
@@ -138,21 +140,21 @@ static ID_INLINE float BigFloat(const float *l) { FloatSwap(l); }
 
 static inline unsigned int __lwbrx(register void *addr, register int offset) {
     register unsigned int word;
-    
+
     asm("lwbrx %0,%2,%1" : "=r" (word) : "r" (addr), "b" (offset));
     return word;
 }
 
 static inline unsigned short __lhbrx(register void *addr, register int offset) {
     register unsigned short halfword;
-    
+
     asm("lhbrx %0,%2,%1" : "=r" (halfword) : "r" (addr), "b" (offset));
     return halfword;
 }
 
 static inline float __fctiw(register float f) {
     register float fi;
-    
+
     asm("fctiw %0,%1" : "=f" (fi) : "f" (f));
 
     return fi;
@@ -173,7 +175,7 @@ static inline float LittleFloat (const float l) { return FloatSwap(&l); }
 
 #include <MacTypes.h>
 #define	MAC_STATIC
-#define ID_INLINE inline 
+#define ID_INLINE inline
 
 #define	CPUSTRING	"MacOS-PPC"
 
@@ -200,7 +202,7 @@ static inline float LittleFloat (const float l) { return FloatSwap(&l); }
 #define stricmp strcasecmp
 
 #define	MAC_STATIC // bk: FIXME
-#define ID_INLINE inline 
+#define ID_INLINE inline
 
 #ifdef __i386__
 #define	CPUSTRING	"linux-i386"
@@ -244,7 +246,7 @@ inline static float LittleFloat (const float *l) { return FloatSwap(l); }
 #define stricmp strcasecmp
 
 #define MAC_STATIC
-#define ID_INLINE inline 
+#define ID_INLINE inline
 
 #ifdef __i386__
 #define CPUSTRING       "freebsd-i386"
@@ -681,6 +683,8 @@ extern	vec4_t		colorDkBlue;
 #define COLOR_WHITE		'7'
 #define ColorIndex(c)	( ( (c) - '0' ) & 7 )
 
+
+
 #define S_COLOR_BLACK	"^0"
 #define S_COLOR_RED		"^1"
 #define S_COLOR_GREEN	"^2"
@@ -712,7 +716,7 @@ extern	vec3_t	axisDefault[3];
 static inline float Q_rsqrt( float number ) {
 		float x = 0.5f * number;
                 float y;
-#ifdef __GNUC__            
+#ifdef __GNUC__
                 asm("frsqrte %0,%1" : "=f" (y) : "f" (number));
 #else
 		y = __frsqrte( number );
@@ -720,10 +724,10 @@ static inline float Q_rsqrt( float number ) {
 		return y * (1.5f - (x * y * y));
 	}
 
-#ifdef __GNUC__            
+#ifdef __GNUC__
 static inline float Q_fabs(float x) {
     float abs_x;
-    
+
     asm("fabs %0,%1" : "=f" (abs_x) : "f" (x));
     return abs_x;
 }
@@ -741,7 +745,9 @@ float Q_rsqrt( float f );		// reciprocal square root
 signed char ClampChar( int i );
 signed short ClampShort( int i );
 
+#ifdef Q3_VM
 float powf ( float x, int y );
+#endif
 
 // this isn't a real cheap function to call!
 int DirToByte( vec3_t dir );
@@ -806,7 +812,7 @@ void AddPointToBounds( const vec3_t v, vec3_t mins, vec3_t maxs );
 static ID_INLINE int VectorCompare( const vec3_t v1, const vec3_t v2 ) {
 	if (v1[0] != v2[0] || v1[1] != v2[1] || v1[2] != v2[2]) {
 		return 0;
-	}			
+	}
 	return 1;
 }
 
@@ -867,7 +873,7 @@ vec_t VectorLengthSquared( const vec3_t v );
 vec_t Distance( const vec3_t p1, const vec3_t p2 );
 
 vec_t DistanceSquared( const vec3_t p1, const vec3_t p2 );
- 
+
 void VectorNormalizeFast( vec3_t v );
 
 void VectorInverse( vec3_t v );
@@ -973,6 +979,10 @@ void Parse2DMatrix (const char **buf_p, int y, int x, float *m);
 void Parse3DMatrix (const char **buf_p, int z, int y, int x, float *m);
 
 void	QDECL Com_sprintf (char *dest, int size, const char *fmt, ...);
+
+#ifdef Q3_VM
+void sprintf( char *dest, const char *fmt, ...) ;
+#endif
 
 
 // mode parm for FS_FOpenFile
@@ -1093,6 +1103,7 @@ default values.
 #define CVAR_NORESTART		0x00000400		// do not clear when a cvar_restart is issued
 #define CVAR_INTERNAL		0x00000800		// cvar won't be displayed, ever (for passwords and such)
 #define	CVAR_PARENTAL		0x00001000		// lets cvar system know that parental stuff needs to be updated
+#define	CVAR_VVV			0x00002000		//
 
 // nothing outside the Cvar_*() functions should modify these fields!
 typedef struct cvar_s {
@@ -1390,7 +1401,7 @@ typedef enum {
 #define	MAX_STATS				16
 #define	MAX_PERSISTANT			16
 #define	MAX_POWERUPS			16
-#define	MAX_WEAPONS				16		
+#define	MAX_WEAPONS				16
 
 #define	MAX_PS_EVENTS			2
 
@@ -1629,7 +1640,7 @@ typedef struct playerState_s {
 										// walking will use different animations and
 										// won't generate footsteps
 #define	BUTTON_USE				32			// the ol' use key returns!
-#define BUTTON_FORCEGRIP		64			// 
+#define BUTTON_FORCEGRIP		64			//
 #define BUTTON_ALT_ATTACK		128
 
 #define	BUTTON_ANY				256			// any key whatsoever
@@ -1685,11 +1696,14 @@ typedef struct usercmd_s {
 	int				serverTime;
 	int				angles[3];
 	int 			buttons;
-	byte			weapon;           // weapon 
+	byte			weapon;           // weapon
 	byte			forcesel;
 	byte			invensel;
 	byte			generic_cmd;
 	signed char	forwardmove, rightmove, upmove;
+	int 			packettime;		//ADDED: level.time we are handling this usercmd_t.
+									//Why? Because a packet can contain multiple usercmd_t's on low maxpackets. This way we can find
+									//users of low maxpackets!!
 } usercmd_t;
 
 //===================================================================
@@ -1890,7 +1904,7 @@ typedef struct entityState_s {
 typedef enum {
 	CA_UNINITIALIZED,
 	CA_DISCONNECTED, 	// not talking to a server
-	CA_AUTHORIZING,		// not used any more, was checking cd key 
+	CA_AUTHORIZING,		// not used any more, was checking cd key
 	CA_CONNECTING,		// sending request packets to the server
 	CA_CHALLENGING,		// sending challenge packets to the server
 	CA_CONNECTED,		// netchan_t established, getting gamestate
@@ -1977,7 +1991,7 @@ typedef struct {
 
 typedef enum Eorientations
 {
-	ORIGIN = 0, 
+	ORIGIN = 0,
 	POSITIVE_X,
 	POSITIVE_Z,
 	POSITIVE_Y,
@@ -1998,9 +2012,9 @@ typedef enum {
 } memtag_t;
 
 
-typedef struct 
+typedef struct
 {
-	int		isValid;	
+	int		isValid;
 	void	*ghoul2;
 	int		modelNum;
 	int		boltNum;

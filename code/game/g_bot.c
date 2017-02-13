@@ -711,7 +711,7 @@ qboolean G_BotConnect( int clientNum, qboolean restart ) {
 G_AddBot
 ===============
 */
-static void G_AddBot( const char *name, float skill, const char *team, int delay, char *altname) {
+/* static */ void G_AddBot( const char *name, float skill, const char *team, int delay, char *altname) {
 	int				clientNum;
 	char			*botinfo;
 	gentity_t		*bot;
@@ -742,7 +742,7 @@ static void G_AddBot( const char *name, float skill, const char *team, int delay
 		botname = altname;
 	}
 	Info_SetValueForKey( userinfo, "name", botname );
-	Info_SetValueForKey( userinfo, "rate", "25000" );
+	Info_SetValueForKey( userinfo, "rate", "16384" );
 	Info_SetValueForKey( userinfo, "snaps", "20" );
 	Info_SetValueForKey( userinfo, "skill", va("%1.2f", skill) );
 
@@ -765,15 +765,7 @@ static void G_AddBot( const char *name, float skill, const char *team, int delay
 	key = "team_model";
 	Info_SetValueForKey( userinfo, key, model );
 
-/*	key = "headmodel";
-	headmodel = Info_ValueForKey( botinfo, key );
-	if ( !*headmodel ) {
-		headmodel = model;
-	}
-	Info_SetValueForKey( userinfo, key, headmodel );
-	key = "team_headmodel";
-	Info_SetValueForKey( userinfo, key, headmodel );
-*/
+
 	key = "gender";
 	s = Info_ValueForKey( botinfo, key );
 	if ( !*s ) {
@@ -887,7 +879,7 @@ static void G_AddBot( const char *name, float skill, const char *team, int delay
 		bot->client->ps.persistant[ PERS_TEAM ] = bot->client->sess.sessionTeam;
 
 		G_ReadSessionData( bot->client );
-		ClientUserinfoChanged( clientNum );
+		ClientUserinfoChanged( clientNum, qfalse );
 	}
 
 	if( delay == 0 ) {

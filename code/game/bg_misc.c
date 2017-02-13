@@ -15,7 +15,7 @@
 
 #ifndef UI_EXPORTS
 #ifndef QAGAME
-#include "../cgame/cg_local.h"
+/*#include "../cgame/cg_local.h"*/
 #endif
 #endif
 

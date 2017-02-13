@@ -61,7 +61,7 @@ int adjustRespawnTime(float preRespawnTime, int itemType, int itemTag)
 		{	// From 12-32, scale from 0.5 to 0.25;
 			respawnTime *= 20.0 / (float)(level.numPlayingClients + 8);
 		}
-		else 
+		else
 		{	// From 4-12, scale from 1.0 to 0.5;
 			respawnTime *= 8.0 / (float)(level.numPlayingClients + 4);
 		}
@@ -77,7 +77,7 @@ int adjustRespawnTime(float preRespawnTime, int itemType, int itemTag)
 
 
 #define SHIELD_HEALTH				250
-#define SHIELD_HEALTH_DEC			10		// 25 seconds	
+#define SHIELD_HEALTH_DEC			10		// 25 seconds
 #define MAX_SHIELD_HEIGHT			254
 #define MAX_SHIELD_HALFWIDTH		255
 #define SHIELD_HALFTHICKNESS		4
@@ -156,7 +156,7 @@ void ShieldGoSolid(gentity_t *self)
 		ShieldRemove(self);
 		return;
 	}
-	
+
 	trap_Trace (&tr, self->r.currentOrigin, self->r.mins, self->r.maxs, self->r.currentOrigin, self->s.number, CONTENTS_BODY );
 	if(tr.startsolid)
 	{	// gah, we can't activate yet
@@ -313,7 +313,7 @@ void CreateShield(gentity_t *ent)
 	ent->touch = ShieldTouch;
 
 	// see if we're valid
-	trap_Trace (&tr, ent->r.currentOrigin, ent->r.mins, ent->r.maxs, ent->r.currentOrigin, ent->s.number, CONTENTS_BODY ); 
+	trap_Trace (&tr, ent->r.currentOrigin, ent->r.mins, ent->r.maxs, ent->r.currentOrigin, ent->s.number, CONTENTS_BODY );
 
 	if (tr.startsolid)
 	{	// Something in the way!
@@ -496,7 +496,7 @@ void pas_fire( gentity_t *ent )
 
 	VectorSubtract(enOrg, myOrg, fwd);
 	VectorNormalize(fwd);
-	
+
 	myOrg[0] += fwd[0]*16;
 	myOrg[1] += fwd[1]*16;
 	myOrg[2] += fwd[2]*16;
@@ -557,7 +557,7 @@ static qboolean pas_find_enemies( gentity_t *self )
 			continue;
 		}
 		if ( self->noDamageTeam && target->client->sess.sessionTeam == self->noDamageTeam )
-		{ 
+		{
 			continue;
 		}
 		if (self->boltpoint3 == target->s.number)
@@ -655,7 +655,7 @@ void pas_adjust_enemy( gentity_t *ent )
 		ent->enemy = NULL;
 		// shut-down sound
 		G_Sound( ent, CHAN_BODY, G_SoundIndex( "sound/chars/turret/shutdown.wav" ));
-	
+
 		ent->bounceCount = level.time + 500 + random() * 150;
 
 		// make turret play ping sound for 5 seconds
@@ -670,7 +670,7 @@ void turret_die(gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int 
 
 void sentryExpire(gentity_t *self)
 {
-	turret_die(self, self, self, 1000, MOD_UNKNOWN);	
+	turret_die(self, self, self, 1000, MOD_UNKNOWN);
 }
 
 //---------------------------------
@@ -1104,7 +1104,7 @@ int Pickup_Powerup( gentity_t *ent, gentity_t *other ) {
 	if ( !other->client->ps.powerups[ent->item->giTag] ) {
 		// round timing to seconds to make multiple powerup timers
 		// count in sync
-		other->client->ps.powerups[ent->item->giTag] = 
+		other->client->ps.powerups[ent->item->giTag] =
 			level.time - ( level.time % 1000 );
 
 		G_LogWeaponPowerup(other->s.number, ent->item->giTag);
@@ -1219,7 +1219,14 @@ int Pickup_Ammo (gentity_t *ent, gentity_t *other)
 int Pickup_Weapon (gentity_t *ent, gentity_t *other) {
 	int		quantity;
 
-	if ( ent->count < 0 ) {
+	// if ( ent->ammoCountAfterDrop ) {
+	if ( ent->teamnodmg ) {
+		//ADD minefix
+
+		quantity = ent->teamnodmg;
+		ent->teamnodmg = 0;
+
+	} else if ( ent->count < 0 ) {
 		quantity = 0; // None for you, sir!
 	} else {
 		if ( ent->count ) {
@@ -1240,16 +1247,6 @@ int Pickup_Weapon (gentity_t *ent, gentity_t *other) {
 			} else {
 				quantity = quantity*0.5;		// only add half the value.
 			}
-
-			// Old method:  If the player has less than the minimum, give them the minimum, else just add 1.
-/*
-			// drop the quantity if the already have over the minimum
-			if ( other->client->ps.ammo[ ent->item->giTag ] < quantity ) {
-				quantity = quantity - other->client->ps.ammo[ ent->item->giTag ];
-			} else {
-				quantity = 1;		// only add a single shot
-			}
-			*/
 		}
 	}
 
@@ -1260,9 +1257,9 @@ int Pickup_Weapon (gentity_t *ent, gentity_t *other) {
 	Add_Ammo( other, weaponData[ent->item->giTag].ammoIndex, quantity );
 
 	G_LogWeaponPickup(other->s.number, ent->item->giTag);
-	
+
 	// team deathmatch has slow weapon respawns
-	if ( g_gametype.integer == GT_TEAM ) 
+	if ( g_gametype.integer == GT_TEAM )
 	{
 		return adjustRespawnTime(RESPAWN_TEAM_WEAPON, ent->item->giType, ent->item->giTag);
 	}
@@ -1306,10 +1303,10 @@ int Pickup_Health (gentity_t *ent, gentity_t *other) {
 
 //======================================================================
 
-int Pickup_Armor( gentity_t *ent, gentity_t *other ) 
+int Pickup_Armor( gentity_t *ent, gentity_t *other )
 {
 	other->client->ps.stats[STAT_ARMOR] += ent->item->quantity;
-	if ( other->client->ps.stats[STAT_ARMOR] > other->client->ps.stats[STAT_MAX_HEALTH] * ent->item->giTag ) 
+	if ( other->client->ps.stats[STAT_ARMOR] > other->client->ps.stats[STAT_MAX_HEALTH] * ent->item->giTag )
 	{
 		other->client->ps.stats[STAT_ARMOR] = other->client->ps.stats[STAT_MAX_HEALTH] * ent->item->giTag;
 	}
@@ -1325,6 +1322,9 @@ RespawnItem
 ===============
 */
 void RespawnItem( gentity_t *ent ) {
+	if (!ent) {
+		return;
+	}
 	// randomly select from teamed entities
 	if (ent->team) {
 		gentity_t	*master;
@@ -1343,6 +1343,10 @@ void RespawnItem( gentity_t *ent ) {
 
 		for (count = 0, ent = master; count < choice; ent = ent->teamchain, count++)
 			;
+	}
+
+	if (!ent) {
+		return;
 	}
 
 	ent->r.contents = CONTENTS_TRIGGER;
@@ -1429,7 +1433,8 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace) {
 		return;
 	}
 
-	G_LogPrintf( "Item: %i %s\n", other->s.number, ent->item->classname );
+	if (g_logItems.integer)
+		G_LogPrintf( "Item: %s (%i) %s\n", other->client->pers.netnameClean, other->s.number, ent->item->classname );
 
 	predict = other->client->pers.predictItemPickup;
 
@@ -1473,6 +1478,7 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace) {
 		predict = qtrue;
 		break;
 	case IT_HEALTH:
+
 		respawn = Pickup_Health(ent, other);
 //		predict = qfalse;
 		predict = qtrue;
@@ -1576,14 +1582,16 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace) {
 	ent->r.contents = 0;
 
 	// ZOID
-	// A negative respawn times means to never respawn this item (but don't 
-	// delete it).  This is used by items that are respawned by third party 
+	// A negative respawn times means to never respawn this item (but don't
+	// delete it).  This is used by items that are respawned by third party
 	// events such as ctf flags
 	if ( respawn <= 0 ) {
 		ent->nextthink = 0;
 		ent->think = 0;
 	} else {
 		ent->nextthink = level.time + respawn * 1000;
+
+
 		ent->think = RespawnItem;
 	}
 	trap_LinkEntity( ent );
@@ -1599,7 +1607,7 @@ LaunchItem
 Spawns an item and tosses it forward
 ================
 */
-gentity_t *LaunchItem( gitem_t *item, vec3_t origin, vec3_t velocity ) {
+gentity_t *LaunchItem( gitem_t *item, vec3_t origin, vec3_t velocity, int ammoCount ) {
 	gentity_t	*dropped;
 
 	dropped = G_Spawn();
@@ -1671,6 +1679,9 @@ gentity_t *LaunchItem( gitem_t *item, vec3_t origin, vec3_t velocity ) {
 
 	dropped->physicsObject = qtrue;
 
+	if (ammoCount)
+		dropped->teamnodmg = ammoCount;	//minefix
+
 	trap_LinkEntity (dropped);
 
 	return dropped;
@@ -1683,7 +1694,8 @@ Drop_Item
 Spawns an item and tosses it forward
 ================
 */
-gentity_t *Drop_Item( gentity_t *ent, gitem_t *item, float angle ) {
+
+gentity_t *Drop_Item( gentity_t *ent, gitem_t *item, float angle, int ammoCount ) {
 	vec3_t	velocity;
 	vec3_t	angles;
 
@@ -1694,10 +1706,10 @@ gentity_t *Drop_Item( gentity_t *ent, gitem_t *item, float angle ) {
 	AngleVectors( angles, velocity, NULL, NULL );
 	VectorScale( velocity, 150, velocity );
 	velocity[2] += 200 + crandom() * 50;
-	
-	return LaunchItem( item, ent->s.pos.trBase, velocity );
-}
 
+
+	return LaunchItem( item, ent->s.pos.trBase, velocity, ammoCount );
+}
 
 /*
 ================
@@ -1858,14 +1870,7 @@ void FinishSpawningItem( gentity_t *ent ) {
 	// useing an item causes it to respawn
 	ent->use = Use_Item;
 
-	// create a Ghoul2 model if the world model is a glm
-/*	item = &bg_itemlist[ ent->s.modelindex ];
-	if (!stricmp(&item->world_model[0][strlen(item->world_model[0]) - 4], ".glm"))
-	{
-		trap_G2API_InitGhoul2Model(&ent->s, item->world_model[0], G_ModelIndex(item->world_model[0] ), 0, 0, 0, 0);
-		ent->s.radius = 60;
-	}
-*/
+
 	if ( ent->spawnflags & 1 ) {
 		// suspended
 		G_SetOrigin( ent, ent->s.origin );
@@ -1901,19 +1906,6 @@ void FinishSpawningItem( gentity_t *ent ) {
 		return;
 	}
 
-	// powerups don't spawn in for a while
-	/*
-	if ( ent->item->giType == IT_POWERUP ) {
-		float	respawn;
-
-		respawn = 45 + crandom() * 15;
-		ent->s.eFlags |= EF_NODRAW;
-		ent->r.contents = 0;
-		ent->nextthink = level.time + respawn * 1000;
-		ent->think = RespawnItem;
-		return;
-	}
-	*/
 
 	trap_LinkEntity (ent);
 }
@@ -1937,11 +1929,11 @@ void G_CheckTeamItems( void ) {
 		// check for the two flags
 		item = BG_FindItem( "team_CTF_redflag" );
 		if ( !item || !itemRegistered[ item - bg_itemlist ] ) {
-			G_Printf( S_COLOR_YELLOW "WARNING: No team_CTF_redflag in map" );
+			G_Printf( S_COLOR_YELLOW "WARNING: No team_CTF_redflag in map\n" );
 		}
 		item = BG_FindItem( "team_CTF_blueflag" );
 		if ( !item || !itemRegistered[ item - bg_itemlist ] ) {
-			G_Printf( S_COLOR_YELLOW "WARNING: No team_CTF_blueflag in map" );
+			G_Printf( S_COLOR_YELLOW "WARNING: No team_CTF_blueflag in map\n" );
 		}
 	}
 }
@@ -2124,7 +2116,8 @@ void G_RunItem( gentity_t *ent ) {
 
 	if ( ent->s.pos.trType == TR_STATIONARY ) {
 		// check think function
-		G_RunThink( ent );
+		if (!g_pauseGame.integer)
+			G_RunThink( ent );
 		return;
 	}
 
@@ -2137,7 +2130,7 @@ void G_RunItem( gentity_t *ent ) {
 	} else {
 		mask = MASK_PLAYERSOLID & ~CONTENTS_BODY;//MASK_SOLID;
 	}
-	trap_Trace( &tr, ent->r.currentOrigin, ent->r.mins, ent->r.maxs, origin, 
+	trap_Trace( &tr, ent->r.currentOrigin, ent->r.mins, ent->r.maxs, origin,
 		ent->r.ownerNum, mask );
 
 	VectorCopy( tr.endpos, ent->r.currentOrigin );
@@ -2149,7 +2142,8 @@ void G_RunItem( gentity_t *ent ) {
 	trap_LinkEntity( ent );	// FIXME: avoid this for stationary?
 
 	// check think function
-	G_RunThink( ent );
+	if (!g_pauseGame.integer)
+		G_RunThink( ent );
 
 	if ( tr.fraction == 1 ) {
 		return;
