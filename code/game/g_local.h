@@ -407,7 +407,7 @@ typedef struct {
 #define FLOODCONTROL_MS		1000
 
 
-#define ANALYZE_BS
+// #define ANALYZE_BS
 
 #ifdef ANALYZE_BS
 
@@ -1416,4 +1416,5 @@ int			trap_ROFF_Cache( char *file );
 qboolean	trap_ROFF_Play( int entID, int roffID, qboolean doTranslation );
 qboolean	trap_ROFF_Purge_Ent( int entID );
 
+int clientafkcmp( const void *a, const void *b );
 

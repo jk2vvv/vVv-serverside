@@ -2287,6 +2287,52 @@ static void Cmd_AltFolow_f( gentity_t *ent ) {
 		G_SendClientPrint(ent - g_entities, "Alt-follow is now ^1disabled^7.\n");
 }
 
+// AFK command for checking which players are afk
+#define AFK_SECONDS		20
+static void Cmd_AfkList_f (gentity_t *sendto) {
+	int i, count = 0;
+	gentity_t *c;
+	const int secs = AFK_SECONDS;
+	const int clnum = sendto - g_entities;
+	gentity_t *sortedClients[MAX_CLIENTS];
+
+	G_SendClientPrint(clnum, "Non-spectating players who are inactive for more than ^1%d^7 seconds:\n", secs);
+
+	for (i = 0, c = g_entities; i < MAX_CLIENTS; ++i, ++c) {
+		int diff;
+
+		if (!c || !c->inuse || !c->client || c->client->pers.connected != CON_CONNECTED)
+			continue;
+
+		if (c->r.svFlags & SVF_BOT)
+			continue;
+
+		if (G_SkipClient(c->client, TEAM_PLAYING))
+			continue;
+
+		diff = level.time - c->client->pers.lastActionTime;
+
+		diff /= 1000;	//diff is now seconds since last action
+
+		if (diff > secs)
+			sortedClients[ count++ ] = c;
+	}
+
+	if (!count)
+		G_SendClientPrint(clnum, "<no players to list>\n");
+	else {
+		gentity_t *ent;
+
+		//clients who have been afk longest will be shown first.
+		qsort(sortedClients, count, sizeof(gentity_t**), clientafkcmp);
+
+		for (i = 0; i < count; ++i) {
+			ent = sortedClients[i];
+			G_SendClientPrint(clnum, "%s ^7: %s\n", G_ClientNameWithPrefix(ent, 20), G_MsToString(level.time - ent->client->pers.lastActionTime));
+		}
+	}
+}
+
 //Stuff from openJK
 #define CMD_NOINTERMISSION		(1<<0)
 #define CMD_CHEAT				(1<<1)
@@ -2335,6 +2381,7 @@ clientCommand_t clientCommands[] = {
     {"ignorelist", "", "Print a list of players you have on ignore.", Cmd_IgnoreList_f, 0 },
     {"ignoreclear", "", "Remove all players from your ignorelist.", Cmd_IgnoreClear_f, 0 },
     {"altf", "", "Toggle being able to use alt-attack to spec the previous player.", Cmd_AltFolow_f, CMD_NOINTERMISSION },
+	{"afk", "", "See a list of players who haven't touched any buttons lately.", Cmd_AfkList_f, CMD_NOINTERMISSION },
     {HELP_CMD, "", NULL/*"Display this list."*/, Cmd_Help_f, 0 },
 };
 

@@ -629,7 +629,7 @@ void G_UpdateCvars( void ) {
 					else
 						val = 0;
 
-					trap_SendConsoleCommand( EXEC_APPEND, va("g_synchronousClients %d\n", val) );
+					/*trap_SendConsoleCommand( EXEC_APPEND, va("g_synchronousClients %d\n", val) );*/
 
 					if (val) {
 						pauseGameStartTime = level.time;
