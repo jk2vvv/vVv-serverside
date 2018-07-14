@@ -2203,10 +2203,9 @@ void CheckVote( void ) {
 		//No vote in progress.
 		return;
 	}
-
-	if ( level.time - level.voteTime >= VOTE_TIME ||	//Vote time (30 secs) passed
-		 level.voteYes + level.voteNo == level.numVotingClients	//all who can vote have voted
-	) {
+	if ( level.time - level.voteTime >= VOTE_TIME 	//Vote time (30 secs) passed
+			/*|| level.voteYes + level.voteNo == level.numVotingClients	//all who can vote have voted */
+	   ) {
 		//vote time is over
 
 		const int total = level.voteYes + level.voteNo;
