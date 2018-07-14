@@ -517,6 +517,36 @@ void G_RegisterCvars( void ) {
 	level.warmupModificationCount = g_warmup.modificationCount;
 }
 
+
+void CalcViewAngle( playerState_t *ps, const usercmd_t *cmd, vec3_t out ) {
+	short		temp;
+	int		i;
+
+	if ( ps->pm_type == PM_INTERMISSION || ps->pm_type == PM_SPINTERMISSION) {
+		return;		// no view changes at all
+	}
+
+	if ( ps->pm_type != PM_SPECTATOR && ps->stats[STAT_HEALTH] <= 0 ) {
+		return;		// no view changes at all
+	}
+
+	// circularly clamp the angles with deltas
+	for (i=0 ; i<3 ; i++) {
+		temp = cmd->angles[i] + ps->delta_angles[i];
+		if ( i == PITCH ) {
+			// don't let the player look up or down more than 90 degrees
+			if ( temp > 16000 ) {
+				ps->delta_angles[i] = 16000 - cmd->angles[i];
+				temp = 16000;
+			} else if ( temp < -16000 ) {
+				ps->delta_angles[i] = -16000 - cmd->angles[i];
+				temp = -16000;
+			}
+		}
+		out[i] = SHORT2ANGLE(temp);
+	}
+}
+
 /*
 =================
 G_UpdateCvars
@@ -617,6 +647,11 @@ void G_UpdateCvars( void ) {
 						cv->cvarName, cv->vmCvar->string ) );
 				}
 
+				if (cv->vmCvar == &g_motd) {
+					//motd string was updated.
+					trap_SetConfigstring( CS_MOTD, g_motd.string );		// message of the day
+				}
+
 				// hack to make smooth pauses
 				// Thanks to Daggolin for this tip!
 				#if 1
@@ -632,7 +667,16 @@ void G_UpdateCvars( void ) {
 					/*trap_SendConsoleCommand( EXEC_APPEND, va("g_synchronousClients %d\n", val) );*/
 
 					if (val) {
+						gentity_t *ent;
 						pauseGameStartTime = level.time;
+						G_SendClientPrint(-1, "Game was paused.\n");
+
+						//save clients' viewangles..
+						for (k = 0, ent = g_entities; k < MAX_CLIENTS; ++k, ++ent) {
+							if (ent && ent->client && ent->client->pers.connected != CON_DISCONNECTED) {
+								VectorCopy(ent->client->ps.viewangles, ent->client->pauseSavedViewangles);
+							}
+						}
 					} else {
 						// PAUSE STOPPED
 						level.unpauseClient = -1;
@@ -652,6 +696,7 @@ void G_UpdateCvars( void ) {
 							}
 
 							// G_LogPrintf("Pause stopped after %s.\n", pauseGameStartTime, G_MsToString(pauseDuration));
+							G_SendClientPrint(-1, "Pause ended after %s.\n", G_MsToString(pauseDuration));
 
 							level.startTime += pauseDuration;
 
@@ -687,6 +732,10 @@ void G_UpdateCvars( void ) {
 										ent->client->pers.teamState.lasthurtcarrier += pauseDuration;
 									}
 
+									if (ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
+										//restore this clients viewangles as the same as before pause.
+										SetClientViewAngle(ent, ent->client->pauseSavedViewangles);
+									}
 									//Somehow, this causes bugging if someone entered the game during pause (they get infinite invulnerability)
 									// if (object->client->invulnerableTimer)
 										// object->client->invulnerableTimer += pauseDuration;

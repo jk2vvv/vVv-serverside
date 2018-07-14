@@ -571,6 +571,7 @@ struct gclient_s {
 	int			dangerTime;		// level.time when last attack occured
 
 	qboolean	fjDidJump;
+	vec3_t		pauseSavedViewangles;
 };
 
 
