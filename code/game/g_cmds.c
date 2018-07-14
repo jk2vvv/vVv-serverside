@@ -1065,8 +1065,6 @@ static void Cmd_PauseGame_C (gentity_t *ent, const char *args) {
 		return;
 	}
 
-
-
 	if (level.unpauseTime) {
 		//game is about to be unpaused, so we dont care if the pause cvar is on. make sure it stays paused!
 		level.unpauseTime = 0;
@@ -1106,6 +1104,7 @@ static void Cmd_UnpauseGame_C (gentity_t *ent, const char *args) {
 		return;
 	}
 
+	/*
 	real = level.unpauseClient - 1;
 
 	if (real >= 0 && real < MAX_CLIENTS) {
@@ -1125,6 +1124,7 @@ static void Cmd_UnpauseGame_C (gentity_t *ent, const char *args) {
 		G_SendClientPrint(ent - g_entities, "no.\n");
 		return;
 	}
+	*/
 
 	if (level.unpauseTime) {
 		G_SendClientPrint(ent - g_entities, "Unpause is already pending.\n");
