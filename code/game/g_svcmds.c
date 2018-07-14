@@ -1057,6 +1057,17 @@ int clientafkcmp( const void *a, const void *b ) {
 	return (*c2)->client->pers.lastActionTime - (*c1)->client->pers.lastActionTime;
 }
 
+static void Svcmd_Pausegame_f (void) {
+	trap_Cvar_Set( "nt_pauseGame", "1" );
+	G_Printf("Paused game.\n");
+	G_SendClientCenterPrint(-1, "Game was paused by admin.");
+}
+static void Svcmd_Unpausegame_f (void) {
+	trap_Cvar_Set( "nt_pausegame", "0");
+	G_Printf("Unpaused game.\n");
+	G_SendClientCenterPrint(-1, "Game was unpaused by admin.");
+}
+
 #define AFK_SECONDS		20
 static void Svcmd_AfkList_f (void) {
 	int i, count = 0;
@@ -1169,6 +1180,8 @@ static const gameAdminCommand_t G_AdminGameCommands[] = {
     {"cp", NULL, "<text>", "Send a message to all clients that will be displayed in center of the screen", Svcmd_CenterPrint_f },
     {"poll", "vote", "<question>", "Start a poll", Svcmd_Poll_f },
     {"afk", NULL, "", "See a list of clients who haven't touched any buttons for a while", Svcmd_AfkList_f },
+	{"pause", "pausegame", "", "Pause the game", Svcmd_Pausegame_f },
+	{"unpause", "unpausegame", "", "Unpause the game", Svcmd_Unpausegame_f },
 
 	#ifdef DEBUGFPS
 	{"fps", NULL, "[reset]", "See what fps the server is currently running at to see if it can hold up to the sv_fps value.", Svcmd_FPS_f},
@@ -1220,7 +1233,7 @@ static void Svcmd_Cvars_f (void) {
 		qsort(sorted, c, sizeof(sorted[0]), cvarcmp);
 
 	for (i = 0; i < c; ++i) {
-		
+
 		char buf[512] = {0};
 		char *pch = &buf[0];
 		cv = sorted[i];
