@@ -1764,8 +1764,9 @@ void ClientThink( int clientNum ) {
 
 
 	//for afk detection
-	if ( cmd->buttons & BUTTON_ANY )
+	if ( cmd->buttons & BUTTON_ANY ) {
 		ent->client->pers.lastActionTime = level.time;
+	}
 
 	cmd->angles[ROLL] = 0;
 	if ( cmd->forcesel == 1 )

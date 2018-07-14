@@ -94,7 +94,7 @@ vmCvar_t	g_timeouttospec;
 
 //new cvars
 vmCvar_t	g_pauseGame;
-vmCvar_t	g_minmsec;
+vmCvar_t	g_block333;
 vmCvar_t	g_maxmsec;
 vmCvar_t	g_minefix;
 vmCvar_t	g_moverfix;
@@ -154,10 +154,8 @@ int gDuelist2 = -1;
 	{ &g_synchronousClients, "g_synchronousClients", "0", CVAR_SYSTEMINFO, 0, qfalse  },
 
 
-	{ &g_pauseGame, PAUSEGAME_CVARNAME, "0", CVAR_VVV, 0, qtrue, qfalse, "Pauses the game, preventing players from moving, items from respawning, etc."  },
-	{ &g_minmsec, "g_minmsec", "0", CVAR_VVV|CVAR_ARCHIVE/* |CVAR_SERVERINFO */, 0, qfalse, qfalse,
-		"Setting for limiting high fps physics. An example value of 4: fps physics where the fps is over 1000/4=250 will get blocked, and the player cannot roll nor accelerate in air.\n"
-		"    For blocking 333 fps physics, set the value to 4. To disable, set to 0." },		//
+	{ &g_pauseGame, PAUSEGAME_CVARNAME, "0", CVAR_VVV, 0, qfalse, qfalse, "Pauses the game, preventing players from moving, items from respawning, etc."  },
+	{ &g_block333, "g_block333", "1", CVAR_VVV|CVAR_ARCHIVE, 0, qfalse, qfalse, "Block air acceleration when using 333 fps." },
 	{ &g_maxmsec, "g_maxmsec", "0", CVAR_VVV|CVAR_ARCHIVE, 0, qfalse, qfalse,
 		"This variable can be used to block low fps rolling. Example value of 22: rolls done with fps under 1000/22=45 will be blocked." },
 	{ &g_minefix, "g_minefix", "1", CVAR_VVV|CVAR_ARCHIVE, 0, qtrue, qfalse, "This setting is a fix to the behavior where mines that are dropped by a player always will have an ammo count of 3. There are several values:\n"

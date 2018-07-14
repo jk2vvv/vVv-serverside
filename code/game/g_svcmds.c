@@ -1058,17 +1058,15 @@ int clientafkcmp( const void *a, const void *b ) {
 }
 
 static void Svcmd_Pausegame_f (void) {
-	trap_Cvar_Set( "nt_pauseGame", "1" );
-	G_Printf("Paused game.\n");
+	trap_Cvar_Set( PAUSEGAME_CVARNAME, "1" );
 	G_SendClientCenterPrint(-1, "Game was paused by admin.");
 }
 static void Svcmd_Unpausegame_f (void) {
-	trap_Cvar_Set( "nt_pausegame", "0");
-	G_Printf("Unpaused game.\n");
+	trap_Cvar_Set( PAUSEGAME_CVARNAME, "0");
 	G_SendClientCenterPrint(-1, "Game was unpaused by admin.");
 }
 
-#define AFK_SECONDS		20
+#define AFK_SECONDS		15
 static void Svcmd_AfkList_f (void) {
 	int i, count = 0;
 	gentity_t *c;

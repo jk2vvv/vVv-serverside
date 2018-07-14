@@ -11,7 +11,7 @@
 // the "gameversion" client command will print this plus compile date
 // #define	GAMEVERSION	"basejk"
 #define	GAMEVERSION	"< VvV >"
-#define PAUSEGAME_CVARNAME	"nt_PauseGame"
+#define PAUSEGAME_CVARNAME	"g_pausegame"
 
 #define MOD_VERSION	"0.15"
 
@@ -1152,7 +1152,7 @@ extern	vmCvar_t	g_synchronousClients;
 
 extern	vmCvar_t	g_pauseGame;
 
-extern	vmCvar_t	g_minmsec;
+extern	vmCvar_t	g_block333;
 extern	vmCvar_t	g_maxmsec;
 extern	vmCvar_t	g_minefix;
 
