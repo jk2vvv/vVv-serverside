@@ -1218,6 +1218,11 @@ void ClientThink_real( gentity_t *ent ) {
 	client->ps.speed = g_speed.value;
 	client->ps.basespeed = g_speed.value;
 
+	if (g_pauseGame.integer) {
+		//client->ps.pm_type = PM_FREEZE;
+		client->ps.pm_type = PM_SPINTERMISSION;	//no movement NOR viewangles-change allowed
+	}
+
 	if (ent->client->ps.duelInProgress)
 	{
 		gentity_t *duelAgainst = &g_entities[ent->client->ps.duelIndex];

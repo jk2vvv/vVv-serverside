@@ -4353,10 +4353,6 @@ void PmoveSingle (pmove_t *pmove) {
 		return;
 	}
 
-	if (g_pauseGame.integer) {
-		return;
-	}
-
 	if (pm->ps->pm_type == PM_FREEZE) {
 		return;		// no movement at all
 	}
