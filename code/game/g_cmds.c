@@ -1240,8 +1240,6 @@ void G_Say( gentity_t *ent, gentity_t *target, int mode, const char *chatText ) 
 						break;
 				}
 
-
-
 				chatText += strlen(token);
 				cmd->fun( ent, SkipWhitespace2(chatText) );
 				break;

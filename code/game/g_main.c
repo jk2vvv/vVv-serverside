@@ -650,9 +650,8 @@ void G_UpdateCvars( void ) {
 					trap_SetConfigstring( CS_MOTD, g_motd.string );		// message of the day
 				}
 
-				// hack to make smooth pauses
-				// Thanks to Daggolin for this tip!
 				#if 1
+				// A whole lot of stuff must be done when the pauseGame cvar changed value. We check that here.
 				if (cv->vmCvar == &g_pauseGame) {
 					int val;
 					int k;
@@ -669,7 +668,12 @@ void G_UpdateCvars( void ) {
 						pauseGameStartTime = level.time;
 						G_SendClientPrint(-1, "Game was paused.\n");
 
-						//save clients' viewangles..
+						/*save clients' viewangles..
+						This is so we can restore them upon unpause. Because a
+						client may move his mouse which will cause sudden
+						viewangle change upon unpause. We prevent that by
+						forcing the viewangle back to the viewangle he had at
+						the moment of pause. */
 						for (k = 0, ent = g_entities; k < MAX_CLIENTS; ++k, ++ent) {
 							if (ent && ent->client && ent->client->pers.connected != CON_DISCONNECTED) {
 								VectorCopy(ent->client->ps.viewangles, ent->client->pauseSavedViewangles);
@@ -697,7 +701,6 @@ void G_UpdateCvars( void ) {
 							G_SendClientPrint(-1, "Pause ended after %s.\n", G_MsToString(pauseDuration));
 
 							level.startTime += pauseDuration;
-
 							//Roll back the time that cg_drawTimer shows
 							trap_SetConfigstring( CS_LEVEL_START_TIME, va("%i", level.startTime ) );
 

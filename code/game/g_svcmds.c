@@ -1066,7 +1066,7 @@ static void Svcmd_Unpausegame_f (void) {
 	G_SendClientCenterPrint(-1, "Game was unpaused by admin.");
 }
 
-#define AFK_SECONDS		15
+#define AFK_SECONDS		10
 static void Svcmd_AfkList_f (void) {
 	int i, count = 0;
 	gentity_t *c;
@@ -1091,9 +1091,7 @@ static void Svcmd_AfkList_f (void) {
 			continue;
 
 		diff = level.time - c->client->pers.lastActionTime;
-
 		diff /= 1000;	//diff is now seconds since last action
-
 		if (diff > secs)
 			sortedClients[ count++ ] = c;
 	}

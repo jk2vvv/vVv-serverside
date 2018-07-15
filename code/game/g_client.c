@@ -1229,7 +1229,7 @@ void ClientUserinfoChanged( int clientNum, qboolean checkFlood ) {
 	if (1) {
 		int _atoi;
 		s = Info_ValueForKey( userinfo, "teamoverlay" );
-		
+
 		_atoi = atoi( s );
 		if ( _atoi == 2 )
 			client->pers.teamInfo = 2;
@@ -1399,7 +1399,7 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 	if (firstTime)
 		G_SendClientPrint( clientNum, "Server is running ^1[ vVv ] ^7serverside mode. Use ^1/%s^7 for more info.\n", HELP_CMD );
 	#endif
-	
+
 	return NULL;
 }
 

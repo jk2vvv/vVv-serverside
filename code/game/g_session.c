@@ -91,7 +91,7 @@ void G_ReadSessionData( gclient_t *client ) {
 	p = strchr(s, IP_INDICATOR_CHAR);
 	if (p && *p && *(p+1))
 		Q_strncpyz(client->sess.ip, p + 1, sizeof(client->sess.ip));
-		
+
 	StringToIP(client->sess.ip, client->sess.ipb);	//save his ip bytes
 
 	// bk001205 - format issues
