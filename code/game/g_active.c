@@ -1103,7 +1103,6 @@ static void G_HandleGenericCommand (gentity_t *ent, const byte gencmd) {
 }
 
 
-int was333fps = 0;
 void ClientThink_real( gentity_t *ent ) {
 	gclient_t	*client;
 	pmove_t		pm;
@@ -1478,16 +1477,7 @@ void ClientThink_real( gentity_t *ent ) {
 	}
 
 
-	//Added code for checking 333 fps
-	was333fps = 0;
 	Pmove (&pm);
-	if (was333fps) {
-		SetTeam(&g_entities[0] + client->ps.clientNum, "spectator");
-		client->switchTeamTime = level.time + 10000;	// Prevent client from joining again quickly, wait at least 10 sec
-		G_SendClientCenterPrint(client->ps.clientNum, "You were moved to spectator team for using 333 fps or higher");
-		G_SendClientPrint(-1, "%s (%d) ^3was moved to spectator team for using >= 333 fps.\n", client->pers.netname, client->ps.clientNum);
-		return;
-	}
 
 	G_HandleGenericCommand(ent, pm.cmd.generic_cmd);
 

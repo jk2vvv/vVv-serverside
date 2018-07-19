@@ -16,7 +16,6 @@ qboolean gPMDoSlowFall = qfalse;
 
 extern	vmCvar_t	g_pauseGame;
 extern	vmCvar_t	g_block333, g_maxmsec;
-extern int was333fps;
 
 #define BLOCK333_MS		5 //was 5  MINIMUM MSEC  - important: also block 250 fps physics - its nearly 333!
 //val of 5 = maximum fps allowed is 200
@@ -337,7 +336,7 @@ static void PM_Accelerate( vec3_t wishdir, float wishspeed, float accel ) {
 	int			i;
 	float		addspeed, accelspeed, currentspeed;
 
-	#if 0
+	#if 1
 	// fix 333 fps in case cvar is set. (a value of 4 should fix 333 fps physics)
 	// also, we will only cancel acceleration in the air; walking around is still allowed.
 	if ( accel == pm_airaccelerate && !pm->pmove_fixed ) {
@@ -4288,13 +4287,7 @@ void PmoveSingle (pmove_t *pmove) {
 		pml.msec = 200;
 	}
 
-	#if 1 // Fps checks added by me
-	// Check for >= 333 fps physics if required
-	if (!pm->pmoved_fixed && g_block333.integer && pml.msec < BLOCK333_MS) {
-		was333fps = 1;
-	}
-
-	// fix low fps/high fps rolls here, now pml.msec has been set
+	#if 1	// fix low fps/high fps rolls here, now pml.msec has been set
 	if ( !pm->pmove_fixed && BG_InRoll( pm->ps, pm->ps->legsAnim ) ) {
 		if ((g_maxmsec.integer && pml.msec > g_maxmsec.integer)) {
 			pm->ps->speed = 0;
